@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}大宝剑{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="logo">
+        <a href="#"><img src="{{ url_for('static', filename='images/VulnRange.png') }}" style="height: 25px;width: 25px;margin-right: 4px;">大宝剑</a>
+    </div>
+
+    <div class="left_open">
+        <a><i title="展开左侧栏" class="layui-icon">&#xe668;</i></a>
+    </div>
+
+    <ul class="layui-nav right" lay-filter="">
+        <li class="layui-nav-item">
+            {% if g.user %}
+            <a href="javascript:;">{{ g.user['username'] }}<span class="layui-nav-more"></span></a>
+            {% else %}
+            {% endif %}
+            
+            <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                <!-- 二级菜单 -->
+                <dd>
+                    <a onclick="xadmin.open('修改密码',`{{ url_for('admin.pass_edit', uid=g.user['uid']) }}`,450,220)">修改密码</a>
+                <dd>
+                    <a href="{{ url_for('auth.logout') }}">注销</a></dd>
+            </dl>
+        </li>
+    </ul>
+</div>
+
+
+<body class="index">
+        <!-- 中部开始 -->
+        <!-- 左侧菜单开始 -->
+        <div class="left-nav">
+            <div id="side-nav">
+                <ul id="nav">
+                    <li>
+                        <a onclick="xadmin.add_tab('企业组织架构','/enscan/escan')" style="color: aliceblue;">
+                            <i class="layui-icon">&#xe615;</i>
+                            <cite>企业组织架构</cite>
+                        </a>
+                    </li>
+                    <li>
+                        <a onclick="xadmin.add_tab('Web资产管理','/admin/tasklist')" style="color: aliceblue;">
+                            <i class="layui-icon">&#xe7ae;</i>
+                            <cite>Web资产管理</cite>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a onclick="xadmin.add_tab('Icon_Hash','/admin/icohash')" style="color: aliceblue;">
+                            <i class="layui-icon">&#xe735;</i>
+                            <cite>Icon_Hash</cite>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a onclick="xadmin.add_tab('POC插件漏扫','/admin/poc-scan')" style="color: aliceblue;">
+                            <i class="layui-icon">&#xe679;</i>
+                            <cite>POC插件漏扫</cite>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 左侧菜单结束 -->
+
+        <!-- 右侧主体开始 -->
+         
+
+        <div class="page-content" >
+            <div class="layui-tab tab" lay-filter="xbs_tab" lay-allowclose="false">
+                <ul class="layui-tab-title">
+                    <li class="home">
+                        <i class="layui-icon">&#xe68e;</i>welcome</li></ul>
+                <div class="layui-unselect layui-form-select layui-form-selected" id="tab_right">
+                    <dl>
+                        <dd data-type="this">关闭当前</dd>
+                        <dd data-type="other">关闭其它</dd>
+                        <dd data-type="all">关闭全部</dd></dl>
+                </div>
+                <div class="layui-tab-content">
+                    <div class="layui-tab-item layui-show">
+                        <!-- <iframe src="{{ url_for('admin.tasklist') }}" frameborder="0" scrolling="yes" class="x-iframe"></iframe> -->
+                        <div class="layui-fluid">
+                            <div class="layui-row layui-col-space15">
+                                <div class="layui-col-md12">
+                                    <div class="layui-card">
+                                        <div class="layui-card-body ">
+                                            <blockquote class="layui-elem-quote">
+                                                举杯逸兴壮思飞，欲上青天揽明月
+                                            </blockquote>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="layui-col-md12">
+                                    <div class="layui-card">
+                                        <div class="layui-card-header">其他工具</div>
+                                        <div class="layui-card-body ">
+                                            <ul class="layui-row layui-col-space10 layui-this x-admin-carousel x-admin-backlog">
+                                                <li class="layui-col-md2 layui-col-xs6">
+                                                    <a href="https://go.wgpsec.org"  target="_blank" class="x-admin-backlog-body">
+                                                        <h3>精选渗透工具链接导航</h3>
+                                                        <p>
+                                                            <cite style="font-size: medium">渗透资源库</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>  
+                
+                                                <li class="layui-col-md2 layui-col-xs6">
+                                                    <a href="https://wiki.wgpsec.org"  target="_blank" class="x-admin-backlog-body">
+                                                        <h3>WgpSec-wiki</h3>
+                                                        <p>
+                                                            <cite style="font-size: medium">狼组公开知识库</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+
+                                                <li class="layui-col-md2 layui-col-xs6">
+                                                    <a href="https://pan.wgpsec.org"  target="_blank" class="x-admin-backlog-body">
+                                                        <h3>安全工具下载（带宽满速）</h3>
+                                                        <p>
+                                                            <cite style="font-size: medium">狼盘</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                
+                                <div class="layui-col-md12">
+                                    <div class="layui-card">
+                                        <div class="layui-card-header">作者</div>
+                                        <div class="layui-card-body ">
+                                            <table class="layui-table">
+                                                <tbody>
+                                                    <tr>
+                                                        <th>wintrysec</th>
+                                                        <td>
+                                                            <a href="https://github.com/wintrysec" target="_blank">https://github.com/wintrysec</a>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                
+                
+                            </div>
+                        </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+{% endblock %}

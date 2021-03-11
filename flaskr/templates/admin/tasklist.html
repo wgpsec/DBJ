@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<body>
+
+        <div class="layui-fluid">
+            <div class="layui-row layui-col-space15">
+                <div class="layui-col-md12">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            <li><a onclick="xadmin.open('添加任务','/admin/create-task',450,450)" class="layui-btn layui-btn-normal"><i class="layui-icon"></i>添加任务</a></li>
+                        </div> 
+                        <div class="layui-card-body layui-table-body layui-table-main">
+                            <table class="layui-table layui-form">
+                                <thead>
+                                  <tr>
+                                      <th>任务名称</th>
+                                      <th>任务目标</th>
+                                      <th>创建时间</th>
+                                      <th>操作</th>
+                                  </tr>
+                                </thead>
+                                {% for list in lists %}
+                                <tbody>
+                                  <tr>
+                                      <td>{{list['title']}}</td>
+                                      <td>{{list['target']}}</td>
+                                      <td>{{list['create']}}</td>
+                                      <td class="td-manage">
+                                        <a title="查看子域名" onclick="xadmin.add_tab(`{{list['title']}}-子域名`,`{{ url_for('admin.subdomain_list', taskName=list['title']) }}`);javascript:parent.location.reload();">
+                                            <i class="layui-icon">&#xe64c;</i>
+                                        </a>
+                                        <a title="查看Web资产" onclick="xadmin.add_tab(`{{list['title']}}-Web资产`,`{{ url_for('admin.web_list', taskName=list['title']) }}`);javascript:parent.location.reload();">
+                                            <i class="layui-icon">&#xe7ae; </i>
+                                        </a>
+                                        <a title="删除任务"  href="{{ url_for('admin.task_del', taskName=list['title']) }}">
+                                            <i class="layui-icon" onclick="return confirm('确定删除?');">&#xe640;</i>
+                                        </a>
+                                      </td>
+                                  </tr>
+                                </tbody>
+                                {% endfor %}
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+{% endblock %}

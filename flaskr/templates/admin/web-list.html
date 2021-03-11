@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block content %}
+<body>
+
+        <div class="layui-fluid">
+            <div class="layui-row layui-col-space15">
+                <div class="layui-col-md12">
+                    <div class="layui-card">
+
+                        <form class="layui-form" name="task_Name">
+                        <div class="layui-card-header">
+                            <input type="hidden" name="task_Name" value="{{taskname}}" />
+                            <a class="layui-btn layui-btn-normal" href="{{url_for('admin.export_url',taskName=taskname,web_tag=web_tag)}}">导出URL</a>
+                                
+                            <form class="layui-form">
+                                    <div class="layui-input-inline">
+                                        <select name="webtag" lay-verify="" lay-filter="webtag">
+                                            <option value="" disabled selected>指纹索引</option>
+                                            {% for tag in tags %}
+                                            <option value="{{tag}}">{{tag}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <!-- <div class="layui-input-inline">
+                                        <select name="webtag" lay-verify="" lay-filter="webtag">
+                                            <option value="" disabled selected>图标索引</option>
+                                            {% for tag in tags %}
+                                            <option value="{{tag}}">{{tag}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div> -->
+                            </form>
+                        </div>
+                        </form>
+                        
+                        <div class="layui-card-body layui-table-body layui-table-main">
+                            <table class="layui-table layui-form">
+                                <thead>
+                                  <tr>
+                                      <th >序号</th>
+                                      <th style="width: 200px;">主机地址</th>
+                                      <th>网站标题</th>
+                                      <th>Server中间件</th>
+                                      <th >Web指纹</th>
+                                      <th style="width: 110px;">IP</th>
+                                      <th >Port</th>
+                                      <th >省份</th>
+                                      <th >城市</th>
+                                  </tr>
+                                </thead>
+                                {% for list in lists %}
+                                <tbody>
+                                  <tr>
+                                      <td style="width: 30px;">{{loop.index}}</td>
+                                      {% if list['host'][0:4]=='http' %}
+                                      <td><a href="{{list['host']}}" target="_blank" style="color: blue;width: 200px;">{{list['host']}}</a></td>
+                                      {% else %}
+                                      <td><a href="http://{{list['host']}}" target="_blank" style="color: blue;width: 200px;">{{list['host']}}</a></td>
+                                      {% endif %}
+                                      <td>{{list['web_title']}}</td>
+                                      <td>{{list['container']}}</td>
+                                      <td >{{list['tag']}}</td>
+                                      <th style="width: 110px;">{{list['ip']}}</th>
+                                      <th >{{list['port']}}</th>
+                                      <th >{{list['province']}}</th>
+                                      <th >{{list['city']}}</th>
+                                  </tr>
+                                </tbody>
+                                {% endfor %}
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            layui.use(['form', 'layer'],
+            function() {
+                $ = layui.jquery;
+                var form = layui.form;
+                var layer = layui.layer;
+
+                // //监听按钮-导出URL
+                // form.on('submit(export_URL)',function (data) {
+                //     var taskName = '{{taskname}}';
+                //     //利用ajax将数据传到后端
+                //     $.ajax({
+                //         type:"POST",
+                //         url:"/admin/export_url",
+                //         data:{'taskName':taskName},
+                //         success:function (txturl) {
+                //             //对应的值传回
+                //             console.log(txturl);
+                //             layer.alert("导出成功", {icon: 6});
+                //             },
+                //             error:function () {layer.alert('导出失败，请重试');}
+                //     });
+                    
+                // });
+
+                //监测下拉菜单
+                
+                form.on('select(webtag)',function (data) {
+                    var web_tag = data.value;
+                    var taskName = '{{taskname}}';
+                    //console.log(web_tag);
+                    // console.log(taskName);
+                    $.ajax({
+                        type:"post",
+                        url:"/admin/"+taskName+"/web-list",
+                        data:{"webtag":web_tag},
+                        success:function (webs) {
+                            //对应的值传回
+                            document.body.innerHTML="";
+                            document.write(webs);
+                            },error:function () {layer.alert('请求失败');}
+                        });
+                    });
+                    
+                        
+
+            });
+        </script>
+
+    </body>
+
+{% endblock %}

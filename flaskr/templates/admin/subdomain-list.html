@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<body>
+
+        <div class="layui-fluid">
+            <div class="layui-row layui-col-space15">
+                <div class="layui-col-md12">
+                    <div class="layui-card">
+                        <div class="layui-card-body layui-table-body layui-table-main">
+                            <table class="layui-table layui-form">
+                                <thead>
+                                  <tr>
+                                      <th>序号</th>
+                                      <th>Host</th>
+                                      <th>网站标题</th>
+                                      <th>解析IP</th>
+                                      <th>省份</th>
+                                      <th>城市</th>
+                                  </tr>
+                                </thead>
+                                {% for list in lists %}
+                                <tbody>
+                                  <tr>
+                                      <td>{{loop.index}}</td>
+                                      {% if list['host'][0:4]=='http' %}
+                                      <td><a href="{{list['host']}}" target="_blank" style="color: burlywood;">{{list['host']}}</a></td>
+                                      {% else %}
+                                      <td><a href="http://{{list['host']}}" target="_blank" style="color: burlywood;">{{list['host']}}</a></td>
+                                      {% endif %}
+                                      <td>{{list['web_title']}}</td>
+                                      <td>{{list['ip']}}</td>
+                                      <td>{{list['province']}}</td>
+                                      <td>{{list['city']}}</td>
+                                  </tr>
+                                </tbody>
+                                {% endfor %}
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+{% endblock %}

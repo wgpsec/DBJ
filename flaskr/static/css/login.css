@@ -1,0 +1,635 @@
+
+.login-bg{
+    /*background: #eeeeee url() 0 0 no-repeat;*/
+     background:url(../images/bg.png) no-repeat center;
+    background-size: cover;
+    overflow: hidden;
+}
+.login{
+    margin: 120px auto 0 auto;
+    min-height: 420px;
+    max-width: 420px;
+    padding: 40px;
+    background-color: #ffffff;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 4px;
+    /* overflow-x: hidden; */
+    box-sizing: border-box;
+}
+.login a.logo{
+    display: block;
+    height: 58px;
+    width: 167px;
+    margin: 0 auto 30px auto;
+    background-size: 167px 42px;
+}
+.login .message {
+    margin: 10px 0 0 -58px;
+    padding: 18px 10px 18px 60px;
+    background: #189F92;
+    position: relative;
+    color: #fff;
+    font-size: 16px;
+}
+.login #darkbannerwrap {
+    background: url(../images/aiwrap.png);
+    width: 18px;
+    height: 10px;
+    margin: 0 0 20px -58px;
+    position: relative;
+}
+
+.login input[type=text],
+.login input[type=file],
+.login input[type=password],
+.login input[type=email], select {
+    border: 1px solid #DCDEE0;
+    vertical-align: middle;
+    border-radius: 3px;
+    height: 50px;
+    padding: 0px 16px;
+    font-size: 14px;
+    color: #555555;
+    outline:none;
+    width:100%;
+    box-sizing: border-box;
+}
+.login input[type=text]:focus,
+.login input[type=file]:focus,
+.login input[type=password]:focus,
+.login input[type=email]:focus, select:focus {
+    border: 1px solid #27A9E3;
+}
+.login input[type=submit],
+.login input[type=button]{
+    display: inline-block;
+    vertical-align: middle;
+    padding: 12px 24px;
+    margin: 0px;
+    font-size: 18px;
+    line-height: 24px;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    color: #ffffff;
+    background-color: #189F92;
+    border-radius: 3px;
+    border: none;
+    -webkit-appearance: none;
+    outline:none;
+    width:100%;
+}
+.login hr {
+    background: #fff url() 0 0 no-repeat;
+}
+.login hr.hr15 {
+    height: 15px;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+}
+.login hr.hr20 {
+    height: 20px;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+}
+
+
+@charset "utf-8";
+*{
+    margin: 0px;
+    padding: 0px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+a{
+    text-decoration: none;
+}
+html{
+    width: 100%;
+    height: 100%;
+    overflow-x:hidden; 
+    overflow-y:auto;
+}
+body{
+    width: 100%;
+    min-height: 100%;
+    background: #f1f1f1;
+    /*background: #fff;*/
+}
+.x-red{
+    color: red;
+}
+
+.layui-form-switch{
+    margin-top: 0px;
+}
+.layui-input:focus, .layui-textarea:focus {
+    border-color: #189f92!important;
+}
+
+.layui-fluid{
+    padding:15px;
+}
+.x-nav{
+    padding: 0 20px;
+    position: relative;
+    z-index: 99;
+    border-bottom: 1px solid #e5e5e5;
+    line-height: 39px;
+    height: 39px;
+    overflow: hidden;
+    background: #fff;
+}
+.page{
+    text-align: center;
+
+}
+.page a{
+    display: inline-block;
+    background: #fff;
+    color: #888;
+    padding: 5px;
+    min-width: 15px;
+    border: 1px solid #E2E2E2;
+
+}
+.page span{
+    display: inline-block;
+    padding: 5px;
+    min-width: 15px;
+    border: 1px solid #E2E2E2;
+}
+.page span.current{
+    display: inline-block;
+    background: #1E9FFF;
+    color: #fff;
+    padding: 5px;
+    min-width: 15px;
+    border: 1px solid #1E9FFF;
+}
+.page .pagination li{
+    display: inline-block;
+    margin-right: 5px;
+    text-align: center;
+}
+.page .pagination li.active span{
+    background: #1E9FFF;
+    color: #fff;
+    border: 1px solid #1E9FFF;
+
+}
+
+/*登录样式*/
+/*头部*/
+.container{
+    width: 100%;
+    height: 45px;
+    background-color: #222;
+}
+.container a,.layui-nav .layui-nav-item a{
+    color: #fff;
+}
+.container .logo a{
+    background-color: rgba(0,0,0,0);
+}
+.container .logo a{
+    float: left;
+    font-size: 18px;
+    padding-left: 20px;
+    line-height: 45px;
+    width: 200px;
+}
+.container .right{
+    background-color:rgba(0,0,0,0);
+    float: right;
+
+}
+.container .left_open{
+    height: 45px;
+    float: left;
+    margin-left: 10px;
+}
+.container .left_open i{
+    display: block;
+    background: rgba(255,255,255,0.1);
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    border-radius: 3px;
+    text-align: center;
+    margin-top: 7px;
+    cursor: pointer;
+}
+.container .left_open i:hover{
+    background: rgba(255,255,255,0.3);
+}
+
+.container .left{
+    background-color:rgba(0,0,0,0);
+    float: left;
+
+}
+.container .layui-nav-item{
+    line-height: 45px;
+}
+.container .layui-nav-more{
+    top: 20px;
+}
+.container .layui-nav-child{
+    top: 50px;
+}
+.container .layui-nav-child i{
+    margin-right: 10px;
+}
+.layui-nav .layui-nav-item a{
+    cursor: pointer;
+}
+.layui-nav .layui-nav-child a{
+    color: #333;
+    cursor: pointer;
+}
+.left-nav{
+    position: absolute;
+    top: 45px;
+    bottom: 0px;
+    /*bottom: 42px;*/
+    left: 0;
+    z-index: 2;
+    padding-top: 10px;
+    background-color: rgba(0,0,0,.85);
+    width: 220px;
+    max-width: 220px;
+    overflow: auto;
+    overflow-x:hidden;
+    overflow: hidden;
+
+    /*width: 0px;*/
+}
+#side-nav{
+    width: 220px;
+}
+
+.left-nav #nav li:hover > a{
+    /*color: blue;*/
+}
+.left-nav #nav .current{
+    background-color: rgba(0, 0, 0, 0.3);
+}
+.left-nav #nav li a{
+    font-size: 14px;
+    padding: 10px 15px 10px 15px;
+    display: block;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: all 0.3s;
+}
+.left-nav a:hover{
+    background: #1E9FFF !important;
+    color: #fff;
+    border-color:  #1E9FFF !important;
+}
+.left-nav a.active{
+    background: #1E9FFF !important;
+    color: #fff;
+    border-color:  #1E9FFF !important;
+}
+.left-nav #nav li a cite{
+    font-size: 14px;
+}
+
+.left-nav #nav li .sub-menu{
+    display: none;
+}
+.left-nav #nav li .opened{
+    display: block;
+}
+.left-nav #nav li .opened:hover{
+    /*background: #fff ;*/
+}
+.left-nav #nav li .opened .current{
+    
+}
+.left-nav #nav li .sub-menu li:hover{
+    /*color: blue;*/
+     /*background: #fff ;*/
+}
+.left-nav #nav li .sub-menu li a{
+    padding: 12px 15px 12px 30px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.left-nav #nav li .sub-menu li .sub-menu li a{
+    padding-left: 45px;
+}
+/*.left-nav #nav li .sub-menu li a:hover{
+    color: #148cf1;
+}*/
+.left-nav #nav li .sub-menu li a i{
+    font-size: 12px;
+}
+.left-nav #nav li a i{
+    padding-right: 10px;
+    line-height: 14px;
+}
+.left-nav #nav li .nav_right{
+    float: right;
+    font-size: 16px;
+}
+.x-slide_left {
+    width: 17px;
+    height: 61px;
+    background: url(../images/icon.png) 0 0 no-repeat;
+    position: absolute;
+    top: 200px;
+    left: 220px;
+    cursor: pointer;
+    z-index: 3;
+}
+.page-content{
+    position: absolute;
+    top: 45px;
+    right: 0;
+    /*bottom: 42px;*/
+    bottom: 0px;
+    left: 220px;
+    overflow: hidden;
+    z-index: 1;
+}
+.page-content-bg{
+    position: absolute;
+    top: 45px;
+    right: 0;
+    /*bottom: 42px;*/
+    bottom: 0px;
+    left: 220px;
+    background: rgba(0,0,0,0.5);
+    overflow: hidden;
+    z-index: 100;
+    display: none;
+}
+
+.page-content .tab{
+    height: 100%;
+    width: 100%;
+    /*background: #EFEEF0;*/
+    margin: 0px;
+}
+.page-content .layui-tab-title{
+    /*padding-top: 5px;*/
+    height: 35px;
+    background: #EFEEF0 ;
+    position: relative;
+    z-index: 100;
+}
+.page-content .layui-tab-title li.home i{
+    padding-right: 5px;
+}
+.page-content .layui-tab-title li.home .layui-tab-close{
+    display: none;
+}
+.page-content .layui-tab-title li{
+    line-height: 35px;
+}
+.page-content .layui-tab-title .layui-this:after{
+    height: 36px;
+}
+.page-content .layui-tab-title li .layui-tab-close{
+    border-radius: 50%;
+}
+.page-content .layui-tab-title .layui-this{
+    background: #fff ;
+}
+.page-content .layui-tab-bar{
+    height:34px;
+    line-height: 35px;
+}
+.page-content .layui-tab-content{
+    position: absolute;
+    top: 36px;
+    bottom: 0px;
+    width: 100%;
+    padding: 0px;
+    overflow: hidden;
+}
+.page-content .layui-tab-content .layui-tab-item{
+    width: 100%;
+    height: 100%;
+    
+}
+.page-content .layui-tab-content .layui-tab-item iframe{
+    width: 100%;
+    height: 100%;
+
+}
+.x-admin-carousel,.layui-carousel,.x-admin-carousel>[carousel-item]>* {
+    background-color:#fff
+}
+
+.x-admin-backlog .x-admin-backlog-body {
+    display:block;
+    padding:10px 15px;
+    background-color:#f8f8f8;
+    color:#999;
+    border-radius:2px;
+    transition:all .3s;
+    -webkit-transition:all .3s
+}
+.x-admin-backlog-body h3 {
+    padding-bottom:10px;
+    font-size:12px
+}
+.x-admin-backlog-body p cite {
+    font-style:normal;
+    font-size:30px;
+    font-weight:300;
+    color:#1E9FFF
+}
+.x-admin-backlog-body:hover {
+    background-color:#CFCFCF;
+    color:#888
+}
+
+.layui-table td, .layui-table th{
+    min-width: 80px;
+}
+
+table th, table td {
+    word-break: break-all;
+}
+
+/*404页面样式*/
+.fly-panel {
+    margin-bottom: 15px;
+    border-radius: 2px;
+    /*background-color: #fff;*/
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
+}
+.fly-none {
+    min-height: 600px;
+    text-align: center;
+    padding-top: 50px;
+    color: #999;
+}
+.fly-none .layui-icon {
+    line-height: 300px;
+    font-size: 300px;
+    color: #393D49;
+}
+.fly-none p {
+    margin-top: 50px;
+    padding: 0 15px;
+    font-size: 20px;
+    color: #999;
+    font-weight: 300;
+}
+#tab_right{
+    display: none;
+    width: 80px;
+    position: absolute;
+    top: 35px;
+    left: 0px;
+}
+#tab_right dl{
+    top: 0px;
+}
+#tab_show{
+    position: absolute;
+    top: 36px;
+    bottom: 0px;
+    width: 100%;
+    background:rgb(255, 255, 255,0);
+    padding: 0px;
+    overflow: hidden;
+    display: none;
+}
+
+
+@media screen and (max-width: 768px){
+    .fast-add{
+        display: none;
+    }
+    .layui-nav .to-index{
+        display: none;
+    }
+    .container .logo a{
+        width: 140px;
+    }
+    .container .left_open {
+        /*float: right;*/
+    }
+    .left-nav{
+        width: 60px;
+    }
+    .left-nav #nav li a i{
+        font-size: 18px;
+    }
+    .left-nav cite,.left-nav .nav_right{
+        display: none;
+    }
+    .page-content{
+        left: 60px;
+    }
+    .page-content .layui-tab-content .layui-tab-item{
+        -webkit-overflow-scrolling: touch; 
+        overflow-y: scroll; 
+    }
+    .x-so input.layui-input{
+        width: 100%;
+        margin: 10px;
+    }
+}
+
+/*精细版样式*/
+
+.x-admin-sm{
+    font-size: 12px;
+}
+.x-admin-sm body{
+    font-size: 12px;
+}
+/*登录页面样式*/
+.x-admin-sm .login input[type=submit],.x-admin-sm .login input[type=button]{
+    font-size: 14px;
+}
+.x-admin-sm .login input[type=text],
+.x-admin-sm .login input[type=file],
+.x-admin-sm .login input[type=password],
+.x-admin-sm .login input[type=email], .x-admin-sm select {
+    font-size: 12px;
+}
+.x-admin-sm .login .message{
+    font-size: 14px;
+}
+
+.x-admin-sm .layui-table td, .x-admin-sm .layui-table th{
+    font-size: 12px;
+}
+.x-admin-sm .layui-elem-field legend{
+    font-size: 18px;
+}
+
+.x-admin-sm .x-admin-backlog-body p cite{
+    font-size: 24px;
+}
+.x-admin-sm .left-nav #nav li a cite{
+    font-size: 12px;
+}
+.x-admin-sm .iconfont{
+    font-size: 14px;
+}
+.x-admin-sm .layui-tab-title li{
+    font-size: 12px;
+}
+.x-admin-sm .layui-icon{
+    font-size: 14px;
+}
+.x-admin-sm .layui-nav *{
+    font-size: 12px;
+}
+.x-admin-sm  .layui-breadcrumb>*{
+   font-size: 12px; 
+}
+.x-admin-sm  .layui-btn,.x-admin-sm .layui-btn-xs,.x-admin-sm .layui-btn-sm{
+    font-size: 12px;
+}
+
+.x-admin-sm .layui-laydate{
+    font-size: 12px;
+}
+.x-admin-sm  .layui-btn{
+    height: 30px;
+    line-height: 30px;
+    padding: 0 10px;
+}
+
+.x-admin-sm .layui-btn-lg{
+    height: 38px;
+    line-height: 38px;
+    padding: 0 18px;
+    font-size: 14px;
+}
+.x-admin-sm .layui-layer-title,.x-admin-sm .layui-layer-dialog .layui-layer-content{
+    font-size: 12px;
+}
+.x-admin-sm .layui-input,.x-admin-sm .layui-select,.x-admin-sm .layui-textarea{
+    height: 30px;
+}
+
+.x-admin-sm .layui-form-pane .layui-form-label{
+    height: 30px;
+    line-height: 14px;
+}
+.x-admin-sm .layui-form-checkbox span{
+    font-size: 12px;
+}
+.x-admin-sm .fly-none .layui-icon {
+    line-height: 300px;
+    font-size: 300px;
+    color: #393D49;
+}
+
