@@ -16,7 +16,7 @@ import os
 import re
 import IPy
 import redis
-import platform
+import pymmh3
 from .rules import ruleDatas #引入Web组件指纹库
 
 #消除安全请求的提示信息,增加重试连接次数
@@ -343,16 +343,8 @@ def whatweb(taskName):
 def icohash():
     if request.method == 'POST':
         ico_url = request.form['icourl']
-
-        if platform.system().lower() == 'windows':
-            cmd ='iconhash -url '+ico_url
-        elif platform.system().lower() == 'linux':
-            cmd ='./iconhash -url '+ico_url
-        else:
-            cmd ='iconhash -url '+ico_url
-
-        icon_hash = os.popen(cmd) 
-        icon_hash = icon_hash.read().strip() 
+        i_hash = getfaviconhash(ico_url)
+        icon_hash='icon_hash="{0}"'.format(str(i_hash))
         print(icon_hash)
 
         re_dis.flushall()#先清空Redis缓存
@@ -375,7 +367,27 @@ def icohash():
         icon_hash="None"
         fofa_icon=re_dis.get('fofa_icon')
     return render_template('admin/icoHash.html',fofa_icon=fofa_icon)
-           
+    
+def change_format(content):
+    count = len(content) % 76
+    items = re.findall(r".{76}", content)
+    final_item = content[-count:]
+    items.append(final_item)
+    return "{0}\n".format("\n".join(items))
+
+
+def getfaviconhash(url):
+    try:
+        response = requests.get(url, verify=False)
+        if response.headers['Content-Type'] == "image/x-icon":
+            favicon = base64.b64encode(response.content).decode('utf-8')
+            hash = pymmh3.hash(change_format(favicon))
+        else:
+            hash = None
+    except Exception:
+        print("[!] Request Error")
+        hash = None
+    return hash           
 
 #POC插件漏扫
 @bp.route('/poc-scan', methods=('GET', 'POST'))
