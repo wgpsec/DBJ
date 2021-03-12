@@ -2,6 +2,8 @@
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for,jsonify,current_app,Flask
 )
+from Crypto.Cipher import AES
+from binascii import b2a_hex, a2b_hex
 from flaskr.auth import login_required
 from werkzeug.exceptions import abort
 from requests.packages import urllib3
@@ -39,17 +41,75 @@ re_dis = redis.Redis(connection_pool=pool)
 
 targets=[]  #所有目标存储用list
 ipc_list=[] #本次任务所有ip段
-e_mail = "" #fofa email
-cookies=dict(rememberMe='axxxxxxxxxx123456')
-k_key ="" #fofa key
 
+cdn_headers=[
+    "xcs",
+    "via",
+    "x-via",
+    "x-cdn",
+    "x-cdn-forward",
+    "x-ser",
+    "x-cf1",
+    "cache",
+    "x-cache",
+    "x-cached",
+    "x-cacheable",
+    "x-hit-cache",
+    "x-cache-status",
+    "x-cache-hits",
+    "x-cache-lookup",
+    "cc_cache",
+    "webcache",
+    "chinacache",
+    "x-req-id",
+    "x-requestid",
+    "cf-request-id",
+    "x-github-request-id",
+    "x-sucuri-id",
+    "x-amz-cf-id",
+    "x-airee-node",
+    "x-cdn-provider",
+    "x-fastly",
+    "x-iinfo",
+    "x-llid",
+    "sozu-id",
+    "x-cf-tsc",
+    "x-ws-request-id",
+    "fss-cache",
+    "powered-by-chinacache",
+    "verycdn",
+    "yunjiasu",
+    "skyparkcdn",
+    "x-beluga-cache-status",
+    "x-content-type-options",
+    "x-download-options",
+    "x-proxy-node",
+    "access-control-max-age",
+    "age",
+    "etag",
+    "expires",
+    "pragma",
+    "cache-control",
+    "last-modified"
+]
+cookies=dict(rememberMe='axxxxxxxxxx123456')
+em=b'NTFlZjc4Y2U1YjY3M2JjMmUyOGQxYzBiNTNiZDU3Y2Y3NjAzYzExMzNhY2U0NWFmZGM1OTQ5Nzkw\nNWNiNTczYg==\n'
+pik=b'NmY5YzQwMWEzOTBkYzM4NTI0YzZiOGRhNWIwNDA3ZDI1OTA3ZmYwMDA4ODBjZDAxNTUyMTIyZjhm\nM2NjYWQ1ZA==\n'
 bp = Blueprint('admin', __name__,url_prefix='/admin')
 
+def decrypt(text):
+    text=base64.decodebytes(text)
+    key = '9999999999999999'.encode('utf-8')
+    mode = AES.MODE_ECB
+    cryptor = AES.new(key, mode)
+    plain_text = cryptor.decrypt(a2b_hex(text))
+    return bytes.decode(plain_text).rstrip('\0')
 
 @bp.route('/')
 @login_required
 def index():
     return render_template('admin/admin.html')
+
 
 @bp.route('/tasklist')
 @login_required
@@ -58,29 +118,41 @@ def tasklist():
     all_tasklist = mongo.db.tasks.find()
     return render_template('admin/tasklist.html',lists=all_tasklist)
 
-def CDN(host,ip,port):
-    if host[0:5]=='https' and host[9].isdigit():
+def cdn_check(host,ip,port):
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] =  "mongodb://{host}:{port}/{database}".format(
+            host='localhost',
+            port=27017,
+            database='webapp'
+            )
+    mongo = PyMongo(app)
+    if host[0:4]=='http':
         url=host
     else:
-        url='http://'+ip+":"+port
+        url='http://'+host
     try:
-        if ':' not in ip: #去掉IPV6
-            resp = requests.get(url,timeout=12,verify=False)
-            if resp.status_code !=400:
-                return 'nocdn'
-            elif resp.status_code ==400:
-                return 'iscdn'
+        resp = requests.get(url,timeout=15,verify=False)
+        print('正在检测CDN '+host)
+        for cdn_header in cdn_headers:
+            hitCDN=re.findall(cdn_header,str(resp.headers))
+            if hitCDN:
+                mongo.db.subdomains.update({'ip':ip,'port':port},{'$set':{'ip':'CDN'}})
+                print(host+" 存在CDN")
             else:
-                return 'orcdn'
-        else:
-            return 'nocdn'
+                pass
     except Exception as ex:
-        return 'timeout'
+        mongo.db.subdomains.update({'ip':ip,'port':port},{'$set':{'ip':str(ip)+' 连接超时'}})
+    finally:
+        thread_max.release()
 
+eemmail=decrypt(em)
+kkee=decrypt(pik)
 #添加任务（包括任务下发）
 @bp.route('/create-task', methods=('GET', 'POST'))
 def create_task():
     mongo = PyMongo(current_app)
+    threads = []
     if request.method == 'POST':
         taskName = request.form['task_name']
         taskTargets = request.form['targets']
@@ -110,19 +182,14 @@ def create_task():
                         host=line[0].rstrip() 
                         ip=line[1].rstrip() 
                         port=line[2].rstrip()
-                        cdn_status = CDN(host,ip,port)
-                        if cdn_status == 'nocdn':
-                            print(ip+"目标不存在CDN: Over ++++++")
-                        elif cdn_status == 'iscdn':
-                            mongo.db.subdomains.update({'ip':ip,'port':port},{'$set':{'ip':'CDN'}})
-                            print(ip+"目标存在CDN：Over !!!")
-                        elif cdn_status == 'timeout':
-                            mongo.db.subdomains.update({'ip':ip,'port':port},{'$set':{'ip':str(ip)+' 连接超时'}})
-                            print(ip+"目标连接超时：Stop ~~~")
-                        else:
-                            mongo.db.subdomains.update({'ip':ip,'port':port},{'$set':{'ip':'可能存在CDN'}})
-                            print(ip+"目标存在CDN：Over !!!")
-
+                        
+                        #判断CDN
+                        thread_max.acquire()
+                        t = threading.Thread(target=cdn_check,args=(host,ip,port,))
+                        threads.append(t)
+                        t.start()
+                    for j in threads:
+                        j.join()
                 else:
                     webs=Webs(target)
                     resualt = list(webs.values())
@@ -183,7 +250,7 @@ def Subdomain(rootdomain):
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size="2000"
     fields = "host,ip,port,title,country,province,city"
-    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=e_mail,key=k_key,query=fofa_query,size=fofa_size,fields=fields)
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=eemmail,key=kkee,query=fofa_query,size=fofa_size,fields=fields)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
     }
@@ -205,7 +272,7 @@ def Webs(ipc):
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size="2000"
     fields = "host,ip,port,title,server,country,province,city"
-    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=e_mail,key=k_key,query=fofa_query,size=fofa_size,fields=fields)
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=eemmail,key=kkee,query=fofa_query,size=fofa_size,fields=fields)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
     }
@@ -226,7 +293,7 @@ def iconhash_search(icon_hash):
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size="2000"
     fields = "host,ip,port,title,server,country,province,city"
-    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=e_mail,key=k_key,query=fofa_query,size=fofa_size,fields=fields)
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=eemmail,key=kkee,query=fofa_query,size=fofa_size,fields=fields)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
     }

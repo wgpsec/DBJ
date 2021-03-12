@@ -2,3 +2,5 @@ Flask
 requests
 Flask-PyMongo
 redis
+pymmh3
+pycryptodome

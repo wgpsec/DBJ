@@ -7,9 +7,6 @@ from .import admin
 from . import auth
 from . import enscan
 
-# user_name='webappuser'
-# pass_word='@scan.886'
-
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -29,12 +26,5 @@ def create_app(test_config=None):
         port=27017,
         database='webapp'
     )
-    # app.config['MONGO_URI'] =  "mongodb://{user_name}:{pass_word}@{host}:{port}/{database}".format(
-    #     user_name=parse.quote(user_name),
-    #     pass_word=parse.quote(pass_word),
-    #     host='localhost',
-    #     port=27017,
-    #     database='webapp'
-    # )
     
     return app
