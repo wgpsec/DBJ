@@ -39,9 +39,9 @@ re_dis = redis.Redis(connection_pool=pool)
 
 targets=[]  #所有目标存储用list
 ipc_list=[] #本次任务所有ip段
-e_mail = "cnno.1@protonmail.com"
+e_mail = "" #fofa email
 cookies=dict(rememberMe='axxxxxxxxxx123456')
-k_key ="86b1a3ae6a597782a0394041c7d1908c"
+k_key ="" #fofa key
 
 bp = Blueprint('admin', __name__,url_prefix='/admin')
 
