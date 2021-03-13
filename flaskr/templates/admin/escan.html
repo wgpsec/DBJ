@@ -8,6 +8,7 @@
         <input type="text" name="company" class="layui-input" lay-verify="company" placeholder="请输入目标企业关键字" >
       </div>
       <button type="submit" class="layui-btn" lay-submit="" lay-filter="search">确定查询</button>
+      <a class="layui-btn" onclick="xadmin.open('设置Cookie',`{{ url_for('admin.cookie_edit') }}`,600,510)">设置Cookie</a>
   </div>
   </form>
 

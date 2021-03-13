@@ -346,6 +346,29 @@ def pass_edit(uid):
 
     return render_template('admin/password-edit.html')
 
+#设置Cookie(百度的BAIDUID)
+@bp.route('/cookie-edit', methods=('GET', 'POST'))
+@login_required
+def cookie_edit():
+    old_cookies=''
+    with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
+        lines=f.readlines()
+    for line in lines:
+        old_cookies += line
+    if request.method == 'POST':
+        cookies = request.form['cookies']
+        error = None
+
+        if not cookies:
+            error = 'Cookies不能为空'
+
+        if error is not None:
+            flash(error)
+        else:
+            with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
+                f.write(cookies)
+
+    return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
 
 # 导出URL
 @bp.route('/<string:taskName>/export_url', methods=('GET', 'POST'))
