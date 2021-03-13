@@ -62,19 +62,21 @@ layui.use(['form','table'], function(){
   form.on('submit(search)',function(data) {
     //发异步，把数据提交给服务端
     //console.log(data.field);
-    $.post(data.form.action,data.field);
-  });
+    var comp_name = data.field['company'];
+    //$.post(data.form.action,data.field);
 
- 
-
-
-  //渲染表格 (组织架构)
-  table.render({
-    elem: '#ora_struct'
-    ,height: 450
-    ,url: '/enscan/getinfo' //数据接口
-    ,cols: [[ //表头
-      {field: 'index', title: '序号', width:60, fixed: 'left'}
+    //渲染表格 (组织架构)
+    var ins1=table.render({
+      elem: '#ora_struct'
+      ,id:'com'
+      ,title:comp_name+'企业组织架构'
+      ,loading: true
+      ,height: 450
+      ,url: '/enscan/getinfo' //数据接口
+      ,method: "post"
+      ,where: data.field
+      ,cols: [[ //表头
+      {field: 'index', title: '序号', width:60, fixed: 'left', type: 'numbers'}
       ,{field: 'company_name', title: '单位名称'}
       ,{field: 'website', title: '网站首页'}
       ,{field: 'email', title: '邮箱地址'}
@@ -82,68 +84,41 @@ layui.use(['form','table'], function(){
       ,{field: 'level', title: '单位级别'}
       ,{field: 'regrate', title: '投资占比'}
       ,{field: 'hunit', title: '上级单位'}
-    ]]
+    ]],
+    done: function (res, curr, count) {
+                comp=res.data;
+            }
   });
 
   //渲染表格 (域名统计)
-  table.render({
+  var ins2=table.render({
     elem: '#domains'
+    ,id:'dom'
+    ,title:comp_name+'一级域名统计'
+    ,loading: true
     ,height: 450
-    , loading: true
     ,url: '/enscan/getdomains' //数据接口
+    ,method: "post"
+    ,where: data.field
     ,cols: [[ //表头
-      {field: 'domain', title: '一级域名',fixed: 'left'}
+      {field: 'index', title: '序号', width:60, fixed: 'left', type: 'numbers'}
+      ,{field: 'domain', title: '一级域名',fixed: 'left'}
       ,{field: 'domain_from', title: '数据来源'}
-    ]]
+    ]],
+    done: function (res, curr, count) {
+                doma=res.data;
+            }
+  });
+
+
+  return false;
   });
 
   //导出按钮(组织架构)
-$(".export").click(function(){
-        var ins1=table.render({
-            elem: '#ora_struct',
-            url: "/enscan/getinfo", //数据接口
-            method: 'post',
-            title: '企业组织架构',
-            where: {
-                mycode: "all"
-            },
-            cols: [[ //表头
-              {field: 'index', title: '序号', width:60, fixed: 'left'}
-              ,{field: 'company_name', title: '单位名称'}
-              ,{field: 'website', title: '网站首页'}
-              ,{field: 'email', title: '邮箱地址'}
-              ,{field: 'tel_phone', title: '电话号码'}
-              ,{field: 'level', title: '单位级别'}
-              ,{field: 'regrate', title: '投资占比'}
-              ,{field: 'hunit', title: '上级单位'}
-            ]],
-            done: function (res, curr, count) {
-                exportData=res.data;
-                table.exportFile(ins1.config.id,exportData);
-            }
-        });
-    });
+$(".export").click(function(){table.exportFile('com',comp);});
 
  //导出按钮(域名)
- $(".export_domain").click(function(){
-        var ins2=table.render({
-            elem: '#domains',
-            url: "/enscan/getdomains", //数据接口
-            method: 'post',
-            title: '一级域名统计',
-            where: {
-                mycode: "all"
-            },
-            cols: [[ //表头
-              {field: 'domain', title: '一级域名',fixed: 'left'}
-              ,{field: 'domain_from', title: '数据来源'}
-            ]],
-            done: function (res, curr, count) {
-                exportData=res.data;
-                table.exportFile(ins2.config.id,exportData);
-            }
-        });
-    });
+ $(".export_domain").click(function(){table.exportFile('dom',doma);});
 
 
 });

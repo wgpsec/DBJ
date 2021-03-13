@@ -37,20 +37,13 @@ s.keep_alive = False
 
 errors = []  # 错误复检列表
 proxys = []  # 代理列表
-
+data_list = []  #存储每个公司信息
 domains = []  # 一级域名列表
 sub_company_id = []  # 二级单位的PID列表
 success_company_ids = []  # 成功查到的所有公司ID
 
-Websites = []  # 用于ICP反查域名的网站列表
-
 # HTTP请求-head头
 headers = {
-    'Accept': 'text/html, application/xhtml+xml, image/jxr, */*',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-Hans-CN, zh-Hans; q=0.5',
-    'Connection': 'Keep-Alive',
-    'Referer': 'https://www.baidu.com',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
     'Content-Type': 'application/x-www-form-urlencoded'
 }
@@ -84,27 +77,25 @@ def percent_to_int(string):
         return newint
     else:
         return 0.5
-        # print("你输入的不是百分比！")
 
 
 def get_icp(target):
     '''ICP备案反查域名列表'''
     api = 'https://www.beianx.cn/bacx/'
     url = api + target
-    resp = s.get(url, verify=False, headers=headers, timeout=8)
+    resp = s.get(url, verify=False, headers=headers, timeout=15)
     pat = r'<div><a href="/bacx/(.*?)">.*?</a></div>'
     rs = re.findall(pat, resp.text)
     for dom in rs:
-        re_dis.hmset(dom, {'domain': dom, 'domain_from': "ICP备案查询"})
-        re_dis.rpush('alldomains', dom)
-        domains.append(dom)
+        key_data={'domain': dom, 'domain_from': "ICP备案查询"}
+        domains.append(key_data)
 
 
 def get_whois(company_name):
     '''whois反查域名'''
     try:
         url = "http://whois.chinaz.com/reverse?host={0}&ddlSearchMode=2".format(company_name)
-        resp = s.get(url, verify=False, headers=headers, timeout=8)
+        resp = s.get(url, verify=False, headers=headers, timeout=15)
         page_pat = r'<span class="col-gray02">共(.*?)页.*?</span>'
         page = re.findall(page_pat, resp.text)
         resp.close()
@@ -118,10 +109,8 @@ def get_whois(company_name):
                 pat = r'<div class="listOther"><a href="/.*?>(.*?)</a></div>'
                 dns_domains = re.findall(pat, resp.text)
                 for domain in dns_domains:
-                    if domain not in domains:
-                        re_dis.hmset(domain, {'domain': domain, 'domain_from': "whois查询"})
-                        re_dis.rpush('alldomains', domain)
-                        domains.append(domain)
+                    key_data={'domain': domain, 'domain_from': "whois查询"}
+                    domains.append(key_data)
         else:
             url = "http://whois.chinaz.com/reverse?host={0}&ddlSearchMode=2&st=&startDay=&endDay=&wTimefilter=$wTimefilter&page=1".format(
                 company_name)
@@ -129,10 +118,9 @@ def get_whois(company_name):
             pat = r'<div class="listOther"><a href="/.*?>(.*?)</a></div>'
             dns_domains = re.findall(pat, resp.text)
             for domain in dns_domains:
-                if domain not in domains:
-                    re_dis.hmset(domain, {'domain': domain, 'domain_from': "whois查询"})
-                    re_dis.rpush('alldomains', domain)
-                    domains.append(domain)
+                key_data={'domain': domain, 'domain_from': "whois查询"}
+                domains.append(key_data)
+                    
     except Exception as ef:
         print(str(ef))
 
@@ -159,32 +147,35 @@ def parse_index(content):
 
 
 def get_root_companyid(company_name):
-    global root_company_id
     url = 'https://aiqicha.baidu.com/s?q=' + company_name
     try:
-        s.headers.update({'Cookie': cookies})
         resp = s.get(url, headers=headers, timeout=12, verify=False)
         item = parse_index(resp.text)
         root_company_id = item["resultList"][0]['pid']
         resp.close()
         return root_company_id
     except Exception as ex_com:
-        print(str(ex_com) + ' 获取主公司ID时出错')
-
-
+        print(str(ex_com) + '请设置Cookie并通过验证')
+def get_pname(pid):
+    api = 'https://aiqicha.baidu.com/company_detail_'
+    api = api + str(pid)
+    rip = random_ip()
+    s.headers.update({'X-Remote-Addr': rip})
+    try:
+        resp = s.get(api, verify=False, timeout=15)
+        item = parse_index(resp.text)
+        company_name = item['entName']  # 公司名
+        resp.close()
+        return company_name
+    except Exception as ex:
+        print(ex)
 def get_company_info(company_id, level, regrate, hunit):
-    global pdomain
     global pname
-    global num
     api = 'https://aiqicha.baidu.com/company_detail_'
     api = api + str(company_id)
     rip = random_ip()
+    s.headers.update({'X-Remote-Addr': rip})
     try:
-        s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
-        s.headers.update({'Connection': 'close'})
-        s.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
-        s.headers.update({'X-Remote-Addr': rip})
         resp = s.get(api, verify=False, timeout=15)
         item = parse_index(resp.text)
         company_name = item['entName']  # 公司名
@@ -193,30 +184,27 @@ def get_company_info(company_id, level, regrate, hunit):
         phone = item['telephone']  # 电话号码
         resp.close()
 
-        # #域名入缓存数据库，三级单位偏差太大，暂时取消 此渠道，请手动处理
-        # if website[0:4]=="www.":
-        #     dom = website[4:]
-        #     if dom not in domains:
-        #         re_dis.hmset(dom,{'domain':dom,'domain_from':"爱企查"})
-        #         re_dis.rpush('alldomains',dom)
-        #         domains.append(dom.strip())
-
-        # 取主公司的首页和公司名用于 ICP和Whois查询
-        if level == "主公司":
-            pname = company_name
+        # #域名入缓存数据库，三级单位偏差太大，请手动处理
+        if website[0:4]=="www." and level != '三级单位':
+            dom = website[4:]
+            key_data={'domain':dom,'domain_from':"爱企查(二级单位)"}
+            domains.append(key_data)
+        elif website[0:4]=="www." and level == '三级单位':
+            dom = website[4:]
+            key_data={'domain':dom,'domain_from':"爱企查(三级单位)"}
+            domains.append(key_data)
         else:
             pass
 
-        # 存储进所有公司名 和 组织架构信息进缓存数据库
-        re_dis.rpush('allcompanys', company_name)
-        re_dis.hmset(company_name, {'index': str(num), 'company_name': company_name, 'website': website, 'email': email,
-                                    'tel_phone': phone, 'level': level, 'regrate': regrate, 'hunit': hunit})
+        if level=='主公司':
+            pname=company_name
+        
+        key_data={'company_name': company_name, 'website': website, 'email': email,'tel_phone': phone, 'level': level, 'regrate': regrate, 'hunit': hunit}
+        data_list.append(key_data)
+  
+        #打印扫描进展（数据来源:企业组织架构缓存数据）
+        print('[+]',company_name,website,email,level,regrate)
         success_company_ids.append(str(company_id))
-
-        # 打印扫描进展（数据来源:企业组织架构缓存数据）
-        print(re_dis.hmget(company_name,
-                           ['index', 'company_name', 'website', 'email', 'tel_phone', 'level', 'regrate', 'hunit']))
-        num = num + 1
 
     except Exception as x:
         print(str(x))
@@ -228,11 +216,11 @@ def get_company_info(company_id, level, regrate, hunit):
         errors.append(error)
 
 
-def get_sub_companys(root_company_id, level):
+def get_sub_companys(pid, level):
     '''通过爱企查主公司ID,查询子公司名称和信息'''
     invest_url = "https://aiqicha.baidu.com/detail/investajax?p=1&size=110&pid={0}&f=%7b\"openStatus\":\"开业\"%7d".format(
-        root_company_id)
-    hunit_url = "https://aiqicha.baidu.com/company_detail_{0}".format(root_company_id)
+        pid)
+    hunit_url = "https://aiqicha.baidu.com/company_detail_{0}".format(pid)
     try:
         resp = s.get(invest_url, verify=False, headers=headers, timeout=8)
         invests = json.loads(resp.text)
@@ -248,7 +236,6 @@ def get_sub_companys(root_company_id, level):
             if (invest['openStatus'] == '开业' and regrate > 0.2):
                 if level == "二级单位":
                     sub_company_id.append(invest['pid'])
-                    # get_company_info(invest['pid'],level,invest['regRate'],pname)
                     thread_max.acquire()
                     t = threading.Thread(target=get_company_info, args=(invest['pid'], level, invest['regRate'], pname))
                     threads.append(t)
@@ -261,7 +248,7 @@ def get_sub_companys(root_company_id, level):
 
 def Two_sub(pid):
     branch_url = "https://aiqicha.baidu.com/detail/branchajax?p=1&size=100&pid={0}&f=%7b\"openStatus\":\"开业\"%7d".format(
-        root_company_id)
+        pid)
     resp_b = s.get(branch_url, verify=False, headers=headers, timeout=8)
     branchs = json.loads(resp_b.text)
     branchs = branchs['data']['list']
@@ -321,80 +308,67 @@ def escan_check():
         resp = s.post(url, data=data, headers=headers, timeout=12, verify=False)
         print(resp.text)
 
+def request_aiqicha(pid):
+    get_company_info(pid, "主公司", "100%", "主公司")  # 获取主公司信息
+    Two_sub(pid)  # 获取二级单位的信息
+    Three_sub()  # 获取三级单位的信息
+    check_error()  # 复检报错的线程任务
+    
+    # 最后输出没查到的错误信息
+    for err in errors:
+        if err[0] in success_company_ids:
+            errors.remove(err)
+        else:
+            with open('error.txt', 'a') as f:
+                f.write(str(err) + '\n')
 
 # 企业组织架构查询
 @bp.route('/escan', methods=('GET', 'POST'))
 def escan():
-    if request.method == 'POST':
-        company = request.form['company']
-        global num
-        global cookies
-        num = 1  # 重置序号
-        cookies = setcookie()
-        # re_dis.flushall()  # 先清空Redis缓存
-        # 关键字缓存PID
-        root_company_id = None
-        if re_dis.exists("enscan:search_key:" + str(company)):
-            root_company_id = get_root_companyid(company)
-            re_dis.set("enscan:search_key:" + str(company), root_company_id)
-        else:
-            root_company_id = re_dis.get("enscan:search_key:" + str(company))
-            pass
-
-        if re_dis.exists("enscan:key:" + str(root_company_id)):
-            pass
-
-        get_company_info(root_company_id, "主公司", "100%", "主公司")  # 获取主公司信息
-
-        get_icp(pname)  # ICP反查域名
-        get_whois(pname)  # whois反查域名
-
-        Two_sub(root_company_id)  # 获取二级单位的信息
-        Three_sub()  # 获取三级单位的信息
-        check_error()  # 复检报错的线程任务
-
-        # 最后输出没查到的错误信息
-        for err in errors:
-            if err[0] in success_company_ids:
-                errors.remove(err)
-            else:
-                with open('error.txt', 'a') as f:
-                    f.write(str(err) + '\n')
-
-        return render_template('admin/escan.html')
-    else:
-        return render_template('admin/escan.html')
+    global cookies
+    cookies = setcookie()
+    s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
+    s.headers.update({'Connection': 'close'})
+    s.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
+    s.headers.update({'Cookie': cookies})
+    return render_template('admin/escan.html')
 
 
 # 企业组织架构数据表查询接口
 @bp.route('/getinfo', methods=('GET', 'POST'))
 def getinfo():
-    rs_list = []
-    val = {}
-    count = 0
-    companys = re_dis.lrange('allcompanys', 0, -1)
-    for company in companys:
-        tmp = re_dis.hmget(company,
-                           ['index', 'company_name', 'website', 'email', 'tel_phone', 'level', 'regrate', 'hunit'])
-        val = {'index': tmp[0], 'company_name': tmp[1], 'website': tmp[2], 'email': tmp[3], 'tel_phone': tmp[4],
-               'level': tmp[5], 'regrate': tmp[6], 'hunit': tmp[7]}
-        rs_list.append(val)
-        count = count + 1
-    table_result = {"code": 0, "msg": None, "count": count, "data": rs_list}
-    return jsonify(table_result)
+    company = request.form['company']
+    if not re_dis.exists("company_info:key:" + company):
+        pid = get_root_companyid(company)
+        re_dis.set("company_info:key:" + company, pid, ex=3600)
+    else:
+        pid = re_dis.get("company_info:key:" + company)
+        
+    # 判断是否已经查询过（避免短时间重复查询）
+    if not re_dis.exists("company_info:" + str(pid)):
+        request_aiqicha(str(pid))
+        re_dis.set("company_info:" + str(pid), json.dumps(data_list), ex=3600)
+    company_data = json.loads(re_dis.get("company_info:" + str(pid)))
+    res_data = {"code": 0, "msg": None, "count": len(company_data), "data": company_data}
+    return jsonify(res_data)
 
 
 # 域名统计数据表查询接口
 @bp.route('/getdomains', methods=('GET', 'POST'))
 def getdomains():
-    rs_list = []
-    val = {}
-    count = 0
-    domains = re_dis.lrange('alldomains', 0, -1)
-    for domain in domains:
-        tmp = re_dis.hmget(domain, ['domain', 'domain_from'])
-        val = {'domain': tmp[0], 'domain_from': tmp[1]}
-        rs_list.append(val)
-        count = count + 1
-    table_result = {"code": 0, "msg": None, "count": count, "data": rs_list}
-    return jsonify(table_result)
+    company = request.form['company']
+    if not re_dis.exists("domains:key:" + company):
+        re_dis.set("domains:key:" + company, company, ex=3600)
+    else:
+        company = re_dis.get("domains:key:" + company)
+        
+    # 判断是否已经查询过（避免短时间重复查询）
+    if not re_dis.exists("domains:" + company):
+        p_id=get_root_companyid(company)
+        p_name=get_pname(p_id)
+        get_icp(p_name)  # ICP反查域名
+        get_whois(p_name)  # whois反查域名
+        re_dis.set("domains:" + company, json.dumps(domains), ex=3600)
+    domain_data = json.loads(re_dis.get("domains:" + company))
+    res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
+    return jsonify(res_data)
