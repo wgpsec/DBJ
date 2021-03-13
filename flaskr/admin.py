@@ -467,6 +467,7 @@ def get_icohash():
         re_dis.set("fofa_icon:key:" + str(ico_url), i_hash, ex=3600)
     else:
         i_hash = re_dis.get("fofa_icon:key:" + str(ico_url))
+        
     # 判断是否已经查询过（避免短时间重复查询）
     if not re_dis.exists("fofa_icon:" + str(i_hash)):
         icon_hash = 'icon_hash="{0}"'.format(str(i_hash))
@@ -475,7 +476,10 @@ def get_icohash():
         for line in ico_webs['results']:
             key_list = ['host', 'ip', 'port', 'web_title', 'container', 'country', 'province', 'city']
             key_data = zip(key_list, line)
-            data_list.append(dict(key_data))
+            key_data=dict(key_data)
+            ihash={'i_hash':i_hash}
+            key_data.update(ihash)
+            data_list.append(key_data)
         re_dis.set("fofa_icon:" + str(i_hash), json.dumps(data_list), ex=3600)
     icon_data = json.loads(re_dis.get("fofa_icon:" + str(i_hash)))
 

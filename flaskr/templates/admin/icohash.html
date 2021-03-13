@@ -15,11 +15,6 @@
         </div>
     </form>
 
-    <div id="hash_rs" style="margin-left: 2%;">
-        请查询后刷新本页面（该查询会清空redis缓存，企业组织架构的数据将被清除，请提前导出）<br/><br/>
-        <p style="color:brown">图标哈希(FOFA语法)： {{ fofa_icon }}</p>
-    </div>
-
     <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
         <legend>ICON-HASH资产匹配</legend>
     </fieldset>
@@ -58,6 +53,7 @@
                         , {field: 'country', title: '国家', width: 80}
                         , {field: 'province', title: '省份', width: 120}
                         , {field: 'city', title: '城市', width: 120}
+                        , {field: 'i_hash', title: 'icon_hash', width: 120}
                     ]]
                 });
 
