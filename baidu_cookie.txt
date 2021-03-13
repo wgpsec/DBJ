@@ -1,0 +1,27 @@
+[
+    {
+        "domain": ".baidu.com",
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "PSINO",
+        "path": "/",
+        "sameSite": "unspecified",
+        "secure": false,
+        "session": true,
+        "storeId": null,
+        "value": "2"
+    },
+    {
+        "domain": ".baidu.com",
+        "expirationDate": 2559360629,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "BAIDUID",
+        "path": "/",
+        "sameSite": "unspecified",
+        "secure": false,
+        "session": false,
+        "storeId": null,
+        "value": "61EExxxxxxxxxxxxxxxx7B1:SL=0:NR=10:FG=1"
+    }
+]
