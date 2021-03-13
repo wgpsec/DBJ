@@ -1,4 +1,6 @@
 # conding=utf-8
+import base64
+
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for, jsonify, current_app, Flask
 )
@@ -11,6 +13,9 @@ import sys
 import os
 import re
 import redis
+import calendar
+
+import time
 
 bp = Blueprint('enscan', __name__, url_prefix='/enscan')
 
@@ -162,6 +167,7 @@ def get_root_companyid(company_name):
         item = parse_index(resp.text)
         root_company_id = item["resultList"][0]['pid']
         resp.close()
+        return root_company_id
     except Exception as ex_com:
         print(str(ex_com) + ' 获取主公司ID时出错')
 
@@ -175,7 +181,7 @@ def get_company_info(company_id, level, regrate, hunit):
     rip = random_ip()
     try:
         s.headers.update({
-                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
         s.headers.update({'Connection': 'close'})
         s.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
         s.headers.update({'X-Remote-Addr': rip})
@@ -289,6 +295,33 @@ def check_error():
         j.join()
 
 
+times = None
+
+
+@bp.route('/escan_check', methods=('GET', 'POST'))
+def escan_check():
+    global times
+    # 验证码安全验证
+    ac = request.args.get("action")
+    if ac == "img":
+        ts = calendar.timegm(time.gmtime())
+        times = ts
+        url = "https://aiqicha.baidu.com/check/getCapImg?t=" + str(times)
+        resp = s.get(url, headers=headers, timeout=12, verify=False)
+        return base64.b64encode(resp.content).decode()
+    elif ac == "sub":
+        captcha = request.args.get("captcha")
+        url = "https://aiqicha.baidu.com/check/checkajax"
+        data = {
+            "type": "imgcaptcha",
+            "captcha": captcha,
+            "time": times,
+            "fromu": "http://aiqicha.baidu.com"
+        }
+        resp = s.post(url, data=data, headers=headers, timeout=12, verify=False)
+        print(resp.text)
+
+
 # 企业组织架构查询
 @bp.route('/escan', methods=('GET', 'POST'))
 def escan():
@@ -298,9 +331,19 @@ def escan():
         global cookies
         num = 1  # 重置序号
         cookies = setcookie()
-        re_dis.flushall()  # 先清空Redis缓存
+        # re_dis.flushall()  # 先清空Redis缓存
+        # 关键字缓存PID
+        root_company_id = None
+        if re_dis.exists("enscan:search_key:" + str(company)):
+            root_company_id = get_root_companyid(company)
+            re_dis.set("enscan:search_key:" + str(company), root_company_id)
+        else:
+            root_company_id = re_dis.get("enscan:search_key:" + str(company))
+            pass
 
-        get_root_companyid(company)  # 获取主公司ID
+        if re_dis.exists("enscan:key:" + str(root_company_id)):
+            pass
+
         get_company_info(root_company_id, "主公司", "100%", "主公司")  # 获取主公司信息
 
         get_icp(pname)  # ICP反查域名
@@ -351,24 +394,6 @@ def getdomains():
     for domain in domains:
         tmp = re_dis.hmget(domain, ['domain', 'domain_from'])
         val = {'domain': tmp[0], 'domain_from': tmp[1]}
-        rs_list.append(val)
-        count = count + 1
-    table_result = {"code": 0, "msg": None, "count": count, "data": rs_list}
-    return jsonify(table_result)
-
-
-# ICON_HASH接口
-@bp.route('/geticon_webs', methods=('GET', 'POST'))
-def geticon_webs():
-    rs_list = []
-    val = {}
-    count = 0
-    icowebs = re_dis.lrange('all_ico_webs', 0, -1)
-    for icow in icowebs:
-        tmp = re_dis.hmget(icow,
-                           ['index', 'host', 'ip', 'port', 'web_title', 'container', 'country', 'province', 'city'])
-        val = {'index': tmp[0], 'host': tmp[1], 'ip': tmp[2], 'port': tmp[3], 'web_title': tmp[4], 'container': tmp[5],
-               'country': tmp[6], 'province': tmp[7], 'city': tmp[8]}
         rs_list.append(val)
         count = count + 1
     table_result = {"code": 0, "msg": None, "count": count, "data": rs_list}
