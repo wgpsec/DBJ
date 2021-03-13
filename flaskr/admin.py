@@ -433,7 +433,7 @@ def icohash():
     else:
         icon_hash="None"
         fofa_icon=re_dis.get('fofa_icon')
-    return render_template('admin/icoHash.html',fofa_icon=fofa_icon)
+    return render_template('admin/icohash.html',fofa_icon=fofa_icon)
     
 def change_format(content):
     count = len(content) % 76
