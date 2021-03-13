@@ -462,11 +462,6 @@ def get_icohash():
     ico_url = request.form['icourl']
     print(ico_url)
     i_hash = getfaviconhash(ico_url)
-    # if not re_dis.exists("fofa_icon:key:" + str(ico_url)):
-    #     i_hash = getfaviconhash(ico_url)
-    #     re_dis.set("fofa_icon:key:" + str(ico_url), None, ex=3600)
-    # else:
-    #     i_hash = re_dis.get("fofa_icon:key:" + str(ico_url))
     # 判断是否已经查询过（避免短时间重复查询）
     if not re_dis.exists("fofa_icon:" + str(i_hash)):
         icon_hash = 'icon_hash="{0}"'.format(str(i_hash))
