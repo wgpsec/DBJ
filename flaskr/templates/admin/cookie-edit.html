@@ -37,6 +37,16 @@
                     //发异步
                     layer.alert("设置成功", {
                         icon: 6
+                    },
+                    function() {
+                        // 获得frame索引
+                        var index = parent.layer.getFrameIndex(window.name);
+                        
+                        //关闭当前frame
+                        parent.layer.close(index);
+                        
+                        // 可以对父窗口进行刷新
+                        xadmin.father_reload();
                     });
                     return false;
                 });
