@@ -13,6 +13,7 @@
 
     <ul class="layui-nav right" lay-filter="">
         <li class="layui-nav-item">
+            
             {% if g.user %}
             <a href="javascript:;">{{ g.user['username'] }}<span class="layui-nav-more"></span></a>
             {% else %}
@@ -22,6 +23,9 @@
                 <!-- 二级菜单 -->
                 <dd>
                     <a onclick="xadmin.open('修改密码',`{{ url_for('admin.pass_edit', uid=g.user['uid']) }}`,450,220)">修改密码</a>
+                <dd>
+                    <a href="{{ url_for('admin.clear_redis') }}">清空缓存</a>
+                </dd>
                 <dd>
                     <a href="{{ url_for('auth.logout') }}">注销</a></dd>
             </dl>

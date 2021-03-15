@@ -260,7 +260,7 @@ def web_list(taskName):
 def Subdomain(rootdomain):
     cmd = '(domain="{dom}") || (cert="{dom}" &&  (status_code="200" || status_code="403") )'.format(dom=rootdomain)
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
-    fofa_size = "2000"
+    fofa_size = "10000"
     fields = "host,ip,port,title,country,province,city"
     api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
         email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
@@ -283,7 +283,7 @@ def Subdomain(rootdomain):
 def Webs(ipc):
     cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="403" || status_code=="301" || status_code=="502" || status_code=="404")'
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
-    fofa_size = "2000"
+    fofa_size = "10000"
     fields = "host,ip,port,title,server,country,province,city"
     api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
         email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
@@ -307,7 +307,7 @@ def Webs(ipc):
 def iconhash_search(icon_hash):
     cmd = icon_hash
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
-    fofa_size = "2000"
+    fofa_size = "10000"
     fields = "host,ip,port,title,server,country,province,city"
     api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
         email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
@@ -460,13 +460,12 @@ def icohash():
 @bp.route('/get_icohash', methods=["POST", "GET"])
 def get_icohash():
     ico_url = request.form['icourl']
-    print(ico_url)
-    # i_hash = getfaviconhash(ico_url)
     if not re_dis.exists("fofa_icon:key:" + str(ico_url)):
         i_hash = getfaviconhash(ico_url)
         re_dis.set("fofa_icon:key:" + str(ico_url), i_hash, ex=3600)
     else:
         i_hash = re_dis.get("fofa_icon:key:" + str(ico_url))
+    print(ico_url,i_hash)
         
     # 判断是否已经查询过（避免短时间重复查询）
     if not re_dis.exists("fofa_icon:" + str(i_hash)):
@@ -498,17 +497,24 @@ def change_format(content):
 # 获取远程 favicon hash信息
 def getfaviconhash(url):
     try:
-        response = requests.get(url, verify=False)
-        if response.headers['Content-Type'] == "image/x-icon":
-            favicon = base64.b64encode(response.content).decode('utf-8')
+        resp = s.get(url, verify=False)
+        if "image/x-icon" in resp.headers['Content-Type']:
+            favicon = base64.b64encode(resp.content).decode('utf-8')
             hash = pymmh3.hash(change_format(favicon))
         else:
             hash = None
-    except Exception:
-        print("[!] Request Error")
+        resp.close()
+    except Exception as ex:
+        print("[!] Request Error"+"\n"+str(ex))
         hash = None
     return hash
 
+#清空全部redis缓存
+@bp.route('/clear_redis')
+@login_required
+def clear_redis():
+    re_dis.flushall()
+    return render_template('admin/admin.index')
 
 # POC插件漏扫
 @bp.route('/poc-scan', methods=('GET', 'POST'))
