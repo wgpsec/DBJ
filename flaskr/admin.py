@@ -514,7 +514,7 @@ def getfaviconhash(url):
 @login_required
 def clear_redis():
     re_dis.flushall()
-    return render_template('admin/admin.index')
+    return redirect(url_for('admin.index'))
 
 # POC插件漏扫
 @bp.route('/poc-scan', methods=('GET', 'POST'))
