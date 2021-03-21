@@ -1,0 +1,5 @@
+db.createCollection("tasks")
+db.createCollection("webs")
+db.createCollection("subdomains")
+db.createCollection("user")
+db.user.insert({uid:1,username:'admin',password:'admin'})
