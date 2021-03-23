@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/ReaTeam-%E6%AD%A6%E5%99%A8%E5%BA%93-red)![](https://img.shields.io/badge/license-GPL--3.0-orange)![](https://img.shields.io/badge/version-1.0.1-brightgreen)![](https://img.shields.io/badge/author-wintrysec%20%E6%B8%A9%E9%85%92-blueviolet)![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)
 
-![](C:\Users\wintry\Desktop\Github_S\DBJ\banner.jpg)
+![](https://gitee.com/wintrysec/images/raw/master/banner.jpg)
 
 ## 概述
 
