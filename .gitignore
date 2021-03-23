@@ -1,4 +1,5 @@
 # Byte-compiled / optimized / DLL files
+baidu_cookie.txt
 __pycache__/
 *.py[cod]
 *$py.class
@@ -129,4 +130,3 @@ dmypy.json
 .pyre/
 
 .idea
-baidu_cookie.txt

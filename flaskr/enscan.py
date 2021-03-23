@@ -48,6 +48,12 @@ headers = {
     'Content-Type': 'application/x-www-form-urlencoded'
 }
 
+def clear_lists():
+    errors.clear()
+    proxys.clear()
+    data_list.clear()
+    sub_company_id.clear()
+    success_company_ids.clear()
 
 # set-cookie
 def setcookie():
@@ -337,6 +343,7 @@ def escan():
 # 企业组织架构数据表查询接口
 @bp.route('/getinfo', methods=('GET', 'POST'))
 def getinfo():
+    clear_lists()
     company = request.form['company']
     if not re_dis.exists("company_info:key:" + company):
         pid = get_root_companyid(company)
@@ -348,14 +355,18 @@ def getinfo():
     if not re_dis.exists("company_info:" + str(pid)):
         request_aiqicha(str(pid))
         re_dis.set("company_info:" + str(pid), json.dumps(data_list), ex=3600)
-    company_data = json.loads(re_dis.get("company_info:" + str(pid)))
-    res_data = {"code": 0, "msg": None, "count": len(company_data), "data": company_data}
+        company_data = json.loads(re_dis.get("company_info:" + str(pid)))
+        res_data = {"code": 0, "msg": None, "count": len(company_data), "data": company_data}
+    else:
+        company_data = json.loads(re_dis.get("company_info:" + str(pid)))
+        res_data = {"code": 0, "msg": None, "count": len(company_data), "data": company_data}
     return jsonify(res_data)
 
 
 # 域名统计数据表查询接口
 @bp.route('/getdomains', methods=('GET', 'POST'))
 def getdomains():
+    domains.clear()
     company = request.form['company']
     if not re_dis.exists("domains:key:" + company):
         re_dis.set("domains:key:" + company, company, ex=3600)
@@ -369,6 +380,9 @@ def getdomains():
         get_icp(p_name)  # ICP反查域名
         get_whois(p_name)  # whois反查域名
         re_dis.set("domains:" + company, json.dumps(domains), ex=3600)
-    domain_data = json.loads(re_dis.get("domains:" + company))
-    res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
+        domain_data = json.loads(re_dis.get("domains:" + company))
+        res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
+    else:
+        domain_data = json.loads(re_dis.get("domains:" + company))
+        res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
     return jsonify(res_data)

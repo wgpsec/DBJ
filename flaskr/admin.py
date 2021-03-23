@@ -402,9 +402,8 @@ def resWeb(url, host, taskName):
         )
         try:
             mongo = PyMongo(app)
-            tags = mongo.db.webs.find({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
-            for line in tags:
-                tag = line['tag']
+            tags = mongo.db.webs.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
+            tag=tags['tag']
             resp = requests.get(url, cookies=cookies, timeout=8, verify=False)  # 忽略对 SSL 证书的验证
             resp_err = requests.get(url + '/tt', timeout=8, verify=False)  # 请求不存在的页面去让页面报错
             for cms, finger in ruleDatas.items():
@@ -417,19 +416,14 @@ def resWeb(url, host, taskName):
                         mongo.db.webs.update({'host': host, 'task_name': taskName}, {'$set': {'tag': cms}})
                 else:
                     pass
-            mongo.db.client.close()
-            mongo = None
             resp.close()
             print("--正在识别--" + url)
-        except Exception as ex:
-            mongo.db.webs.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})
-            # mongo.db.webs.remove({'host':host,'task_name':taskName})
+        except Exception as exs:
+            mongo.db.webs.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
+        finally:
             mongo.db.client.close()
             mongo = None
-        finally:
-            mongo = None
             thread_max.release()
-
 
 def whatweb(taskName):
     mongo = PyMongo(current_app)
