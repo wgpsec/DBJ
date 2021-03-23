@@ -1,23 +1,27 @@
 <h1 align="center">DBJ大宝剑 🗡</h1>
 
-![说光](C:\Users\wintry\Desktop\说光.jpg)
+![](https://img.shields.io/badge/ReaTeam-%E6%AD%A6%E5%99%A8%E5%BA%93-red)![](https://img.shields.io/badge/license-GPL--3.0-orange)![](https://img.shields.io/badge/version-1.0.1-brightgreen)![](https://img.shields.io/badge/author-wintrysec%20%E6%B8%A9%E9%85%92-blueviolet)![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)
 
-## 技术栈
+![](C:\Users\wintry\Desktop\Github_S\DBJ\banner.jpg)
+
+## 概述
 
 **边界打点资产梳理工具**
 
-```
-Layui
-Python-Flask
-Redis
-MongoDB
+**项目出于测试阶段，代码会时常更新，各位师傅点个`Start`关注下**
+
+```bash
+技术栈如下
+
+前端   Layui
+服务端 Python-Flask
+缓存   Redis
+持久化 MongoDB
 ```
 
 **演示地址**：http://dbjtest.vaiwan.com 密码：`admin/admin`
 
-演示站只作为演示，6小时重置一次数据，有时候会有不稳定的情况 
-
-Web资产管理虽然可跑任务，但是所有人都能看到你跑的任务
+演示站只作为演示（部分功能不可用），6小时重置一次数据，有时候会有不稳定的情况 
 
 不要改密码，不要改密码，改了别人就看不了了
 
@@ -47,7 +51,7 @@ Web资产管理虽然可跑任务，但是所有人都能看到你跑的任务
 
 4、所有查询到的数据会存入redis缓存数据库，并且可导出为CSV
 
-​      请及时导出查询到的数据，查询其它企业信息时会清空上一个查询企业的缓存
+​      在用户(admin)菜单处，可清空缓存(Redis)
 
 5、**注意！注意！注意！**（重要的事情说三遍）
 
@@ -63,9 +67,9 @@ Web资产管理虽然可跑任务，但是所有人都能看到你跑的任务
 
 ​      然后，用`Cookie Editor`这个浏览器插件导出爱企查的Cookie（会存在粘贴板，直接去粘贴）
 
-​      再然后，把导出的Cookie粘贴到本项目的`baidu_cookie.txt`这个文件中
+​      再然后，把导出的Cookie粘贴到Cookie设置中
 
-​      接着去正常使用此模块，随便找个公司名试一下，如果还是报错的话，接着往下看
+​      接着去正常使用此模块，随便找个公司名试一下
 
 ​      此时，打开爱企查会有一个验证码让你填，填对了它，接着就能正常使用了
 
@@ -77,31 +81,36 @@ Web资产管理虽然可跑任务，但是所有人都能看到你跑的任务
 
 ​    这次就不用导Cookie了，直接浏览器访问爱企查填写一次验证码即可
 
+​    在VPS（Linux上部署的同学想用此模块，需要把VPS代理出来，用VPS的Socks在浏览器访问爱企查触发验证码，填写后即可正常使用）
+
 ### Web资产梳理
+
+**这块下任务的格式注意下**
+
+```bash
+#可以是一级域名 或 单个IP 或 C段
+baidu.com
+111.222.333.444
+111.222.333.444/24
+```
 
 **一、子域名资产**
 
-原理：调用FOFA数据
-
-```python
-cmd = '(domain="{dom}") || (cert="{dom}" &&  (status_code="200" || status_code="403") )'.format(dom=rootdomain)
-```
+结果不只子域名，还有跟一级域名证书绑定的一些IP资产
 
 子域名会自动识别CDN，帮助你定位目标真实IP和C段。
 
-此方法可收集到绝大部分子域名资产，但不是百分百全的
+注意：此方法可收集到绝大部分子域名资产，但不是百分百全的
 
 **二、IP资产（Web资产）**
 
 原理：调用FOFA数据（节约时间和VPS、代理池等资源）
 
-这个功能是重头戏，也是最初设计的初衷（扫描单IP或C段中http协议的网站，并识别Web指纹）
+扫描单IP或C段中http协议的网站，并识别Web指纹）
 
 ![image-20210311161144314](https://gitee.com/wintrysec/images/raw/master//image-20210311161144314.png)
 
 来看一下此模块的特点：
-
-根据个人渗透时的思路设计的，不知道是否适合大多数人
 
 1、无分页，一拉到底
 
@@ -125,15 +134,11 @@ Web指纹识别时并未发送恶意请求所以无需代理，这样速度还�
 
 所有指纹都在`flaskr->rules.py中`，以一个Dict的形式存在，python中字典的索引比列表(list)快
 
-目前指纹不是很多，**`只收录一些国内常见且存在安全缺陷的应用`**
+目前指纹不是很多，**`只收录一些国内常见且存在安全缺陷的应用`**，会不断更新的~
 
 指纹的每个特征用 "|" 分割开来，前后不能有空格
 
 ![image-20210311170057173](https://gitee.com/wintrysec/images/raw/master//image-20210311170057173.png)
-
-指纹很大一部分来自棱洞Ehole，感谢[r0eXpeR](https://github.com/r0eXpeR)师傅的开源分享
-
-同时欢迎大家提交新指纹，自己去FOFA找几个资产验证特征准确性后，提交Issues即可。
 
 **指纹识别的速度配置**
 
@@ -152,7 +157,7 @@ thread_max = threading.BoundedSemaphore(value=305)
 
 ### POC插件漏扫
 
-计划中~先调研漏扫引擎~
+计划中。。。
 
 ## 安装教程
 
@@ -164,7 +169,6 @@ thread_max = threading.BoundedSemaphore(value=305)
 
 ```bash
 pip install -r requirements.txt
-pip install Flask
 ```
 
 二、安装配置数据库
