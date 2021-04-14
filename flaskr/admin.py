@@ -258,7 +258,7 @@ def web_list(taskName):
 
 
 def Subdomain(rootdomain):
-    cmd = '(domain="{dom}") || (cert="{dom}" &&  (status_code="200" || status_code="403") )'.format(dom=rootdomain)
+    cmd = '(domain="{dom}" || cert="{dom}") &&  (status_code="200" || status_code="403") '.format(dom=rootdomain)
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size = "10000"
     fields = "host,ip,port,title,country,province,city"
@@ -492,7 +492,7 @@ def change_format(content):
 def getfaviconhash(url):
     try:
         resp = s.get(url, verify=False)
-        if "image/x-icon" in resp.headers['Content-Type']:
+        if "image" in resp.headers['Content-Type']:
             favicon = base64.b64encode(resp.content).decode('utf-8')
             hash = pymmh3.hash(change_format(favicon))
         else:

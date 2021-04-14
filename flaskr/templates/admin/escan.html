@@ -7,8 +7,10 @@
       <div class="layui-input-inline" style="margin-left: 2%;">
         <input type="text" name="company" class="layui-input" lay-verify="company" placeholder="请输入目标企业关键字" >
       </div>
-      <button type="submit" class="layui-btn" lay-submit="" lay-filter="search">确定查询</button>
-      <a class="layui-btn" onclick="xadmin.open('设置Cookie',`{{ url_for('admin.cookie_edit') }}`,600,510)">设置Cookie</a>
+      <button type="submit" class="layui-btn" lay-submit="" lay-filter="search">查询架构</button>
+      <button type="submit" class="layui-btn" lay-submit="" lay-filter="search_dom">查询域名</button>
+      <!-- <p>不用设置Cookie了，取消了三级单位查询，如有需要请自行输入二级单位去查询三级单位</p> -->
+      <!-- <a class="layui-btn" onclick="xadmin.open('设置Cookie',`{{ url_for('admin.cookie_edit') }}`,600,510)">设置Cookie</a> -->
   </div>
   </form>
 
@@ -90,26 +92,34 @@ layui.use(['form','table'], function(){
             }
   });
 
-  //渲染表格 (域名统计)
-  var ins2=table.render({
-    elem: '#domains'
-    ,id:'dom'
-    ,title:comp_name+'一级域名统计'
-    ,loading: true
-    ,height: 450
-    ,url: '/enscan/getdomains' //数据接口
-    ,method: "post"
-    ,where: data.field
-    ,cols: [[ //表头
-      {field: 'index', title: '序号', width:60, fixed: 'left', type: 'numbers'}
-      ,{field: 'domain', title: '一级域名',fixed: 'left'}
-      ,{field: 'domain_from', title: '数据来源'}
-    ]],
-    done: function (res, curr, count) {
-                doma=res.data;
-            }
+  return false;
   });
 
+  form.on('submit(search_dom)',function(data) {
+    //发异步，把数据提交给服务端
+    //console.log(data.field);
+    var comp_name = data.field['company'];
+ 
+
+    //渲染表格 (域名统计)
+var ins2=table.render({
+  elem: '#domains'
+  ,id:'dom'
+  ,title:comp_name+'一级域名统计'
+  ,loading: true
+  ,height: 450
+  ,url: '/enscan/getdomains' //数据接口
+  ,method: "post"
+  ,where: data.field
+  ,cols: [[ //表头
+    {field: 'index', title: '序号', width:60, fixed: 'left', type: 'numbers'}
+    ,{field: 'domain', title: '一级域名',fixed: 'left'}
+    ,{field: 'domain_from', title: '数据来源'}
+  ]],
+  done: function (res, curr, count) {
+              doma=res.data;
+          }
+});
 
   return false;
   });
