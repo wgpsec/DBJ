@@ -255,6 +255,33 @@ def web_list(taskName):
             return render_template('admin/web-list.html', lists=lists, tags=tags, taskname=taskName)
     else:
         return render_template('admin/web-list.html')
+# ICON_HASH计算
+@bp.route('/title_k', methods=["GET", "POST"])
+def title_k():
+    return render_template('admin/assets-keyword.html')
+
+# 关键字查询资产列表-数据查询接口
+@bp.route('/get_keywords', methods=["POST", "GET"])
+def get_keywords():
+    keyword = request.form['keyw']
+    keyword=str(keyword)
+    # 判断是否已经查询过（避免短时间重复查询）
+    if not re_dis.exists("title_keyword:key:" + keyword):
+        re_dis.set("title_keyword:key:" + keyword, keyword, ex=3600)
+        key_webs = keywords(keyword)
+        data_list = []
+        for line in key_webs['results']:
+            key_list = ['host', 'ip', 'port', 'web_title', 'container', 'country', 'province', 'city']
+            key_data = zip(key_list, line)
+            key_data=dict(key_data)
+            data_list.append(key_data)
+        re_dis.set("title_keyword:key:" + keyword, json.dumps(data_list), ex=3600)
+        webkey_data = json.loads(re_dis.get("title_keyword:key:" + keyword))
+        res_data = {"code": 0, "msg": None, "count": len(webkey_data), "data": webkey_data}
+    else:
+        webkey_data = json.loads(re_dis.get("title_keyword:key:" + keyword))
+        res_data = {"code": 0, "msg": None, "count": len(webkey_data), "data": webkey_data}
+    return jsonify(res_data)
 
 
 def Subdomain(rootdomain):
@@ -280,7 +307,29 @@ def Subdomain(rootdomain):
         return (res)
 
 
-def Webs(ipc):
+def keywords(keywd):
+    cmd = 'title="' + keywd + '" && (status_code="200" || status_code=="302" || status_code=="403" || status_code=="301" || status_code=="502" || status_code=="404")'
+    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
+    fofa_size = "10000"
+    fields = "host,ip,port,title,server,country,province,city"
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
+        email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
+    }
+    r = requests.get(api, verify=False, headers=headers)
+    rs_text = r.text
+    res = json.loads(rs_text)
+    error = res['error']
+    if error:
+        errmsg = res['errmsg']
+        if '401 Unauthorized' in errmsg:
+            print('用户名或API 无效！')
+            exit(1)
+    else:
+        return (res)
+
+def keyword(ipc):
     cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="403" || status_code=="301" || status_code=="502" || status_code=="404")'
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size = "10000"
@@ -346,29 +395,29 @@ def pass_edit(uid):
 
     return render_template('admin/password-edit.html')
 
-#设置Cookie(百度的BAIDUID)
-@bp.route('/cookie-edit', methods=('GET', 'POST'))
-@login_required
-def cookie_edit():
-    old_cookies=''
-    with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
-        lines=f.readlines()
-    for line in lines:
-        old_cookies += line
-    if request.method == 'POST':
-        cookies = request.form['cookies']
-        error = None
+# #设置Cookie(百度的BAIDUID)
+# @bp.route('/cookie-edit', methods=('GET', 'POST'))
+# @login_required
+# def cookie_edit():
+#     old_cookies=''
+#     with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
+#         lines=f.readlines()
+#     for line in lines:
+#         old_cookies += line
+#     if request.method == 'POST':
+#         cookies = request.form['cookies']
+#         error = None
 
-        if not cookies:
-            error = 'Cookies不能为空'
+#         if not cookies:
+#             error = 'Cookies不能为空'
 
-        if error is not None:
-            flash(error)
-        else:
-            with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
-                f.write(cookies)
+#         if error is not None:
+#             flash(error)
+#         else:
+#             with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
+#                 f.write(cookies)
 
-    return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
+#     return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
 
 # 导出URL
 @bp.route('/<string:taskName>/export_url', methods=('GET', 'POST'))

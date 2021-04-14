@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <body>
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+        <legend>title关键字资产查询</legend>
+    </fieldset>
+
+    <form class="layui-form">
+        <div class="layui-form-item" style="margin-top: 1%;">
+            <div class="layui-input-inline" style="margin-left: 2%;">
+                <input type="text" name="keyw" class="layui-input" lay-verify="keyw" placeholder="请输入title关键字">
+            </div>
+            <button type="submit" class="layui-btn" lay-submit="" lay-filter="search">确定查询</button>
+        </div>
+    </form>
+
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+        <legend>相关资产列表</legend>
+    </fieldset>
+    <table style="margin-left: 2%;" id="title_key_webs" lay-filter="title_key_webs"></table>
+
+    <script>
+        layui.use(['form', 'table'], function () {
+            var form = layui.form,
+                table = layui.table,
+                flow = layui.flow;
+
+                //自定义函数
+                function addLink(d) {
+                    if (d['host'].indexOf("https") != -1){
+                        return '<a target="_blank" href="'+d['host']+'"><font size="2" color="blue">'+d['host']+'</font></a>';
+                    }else{
+                        return '<a target="_blank" href="http://'+d['host']+'"><font size="2" color="blue">'+d['host']+'</font></a>';
+                    }
+                };
+
+            //自定义验证规则
+            form.verify({keyw: [/\S/, 'title关键字不能为空'],});
+            //监听提交(查询按钮)
+            form.on('submit(search)', function (data) {
+                table.render({
+                    elem: '#title_key_webs', height: 1000,
+                    loading: true,
+                    url: "get_keywords", //数据接口
+                    method: "post",
+                    where: data.field,
+                    cols: [[ //表头
+                        {field: 'index', title: '序号', width: 60, fixed: 'left', type: 'numbers'}
+                        , {field: 'host', title: '主机地址', width: 210, templet: addLink}
+                        , {field: 'web_title', title: '网页标题'}
+                        , {field: 'container', title: '中间件', width: 160}
+                        , {field: 'ip', title: 'ip', width: 160}
+                        , {field: 'port', title: 'port', width: 80}
+                        , {field: 'country', title: '国家', width: 80}
+                        , {field: 'province', title: '省份', width: 120}
+                        , {field: 'city', title: '城市', width: 120}
+                    ]]
+                });
+
+                return false;
+            });
+
+            //渲染表格 (title关键字资产)
+
+
+        });
+    </script>
+    </body>
+{% endblock %}
