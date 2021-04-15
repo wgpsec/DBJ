@@ -10,7 +10,7 @@
                         <form class="layui-form" name="task_Name">
                         <div class="layui-card-header">
                             <input type="hidden" name="task_Name" value="{{taskname}}" />
-                            <a class="layui-btn layui-btn-normal" href="{{url_for('admin.export_url',taskName=taskname,web_tag=web_tag)}}">导出URL</a>
+                            <a class="layui-btn layui-btn-normal" href="{{url_for('admin.export_url',taskName=taskname,web_tag=web_tag,target_type=target_type)}}">导出URL</a>
                                 
                             <form class="layui-form">
                                     <div class="layui-input-inline">
@@ -82,31 +82,12 @@
                 var form = layui.form;
                 var layer = layui.layer;
 
-                // //监听按钮-导出URL
-                // form.on('submit(export_URL)',function (data) {
-                //     var taskName = '{{taskname}}';
-                //     //利用ajax将数据传到后端
-                //     $.ajax({
-                //         type:"POST",
-                //         url:"/admin/export_url",
-                //         data:{'taskName':taskName},
-                //         success:function (txturl) {
-                //             //对应的值传回
-                //             console.log(txturl);
-                //             layer.alert("导出成功", {icon: 6});
-                //             },
-                //             error:function () {layer.alert('导出失败，请重试');}
-                //     });
-                    
-                // });
-
                 //监测下拉菜单
                 
                 form.on('select(webtag)',function (data) {
                     var web_tag = data.value;
                     var taskName = '{{taskname}}';
-                    //console.log(web_tag);
-                    // console.log(taskName);
+
                     $.ajax({
                         type:"post",
                         url:"/admin/"+taskName+"/web-list",

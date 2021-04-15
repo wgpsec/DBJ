@@ -115,9 +115,15 @@ def index():
 @bp.route('/tasklist')
 @login_required
 def tasklist():
+    target_type = request.args.get("target_type")
     mongo = PyMongo(current_app)
-    all_tasklist = mongo.db.tasks.find()
-    return render_template('admin/tasklist.html', lists=all_tasklist)
+    if target_type == "subdomain":
+        all_tasklist = mongo.db.tasks.find({'type':'subdomain'})
+    elif target_type == "web":
+        all_tasklist = mongo.db.tasks.find({'type':'web'})
+    else:
+        all_tasklist = 'None'
+    return render_template('admin/tasklist.html', lists=all_tasklist,target_type=target_type)
 
 
 def cdn_check(host, ip, port):
@@ -156,6 +162,7 @@ kkee = decrypt(pik)
 # 添加任务（包括任务下发）
 @bp.route('/create-task', methods=('GET', 'POST'))
 def create_task():
+    target_type=request.args.get('target_type')
     mongo = PyMongo(current_app)
     threads = []
     if request.method == 'POST':
@@ -170,34 +177,35 @@ def create_task():
             flash(error)
         else:
             create_tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            mongo.db.tasks.insert({'title': taskName,
-                                   'target': taskTargets, 'create': create_tm})
             taskTargets = taskTargets.split('\n')  # 将字符串拆分转成列表
-            for target in taskTargets:
-                target = target.rstrip(' ')
-                if target[0].isalpha():
+            if target_type =='subdomain':
+                mongo.db.tasks.insert({'title': taskName,'target': taskTargets, 'create': create_tm, 'type': 'subdomain'})
+                for target in taskTargets:
+                    target = target.rstrip(' ')
                     subs = Subdomain(target)
                     resualt = list(subs.values())
                     data = resualt[5:]  # 数据集的数据部分
-                    # print(data[0]) #输出最后的结果
                     for line in data[0]:
                         line.append(taskName)
-                        mongo.db.subdomains.insert(
-                            {'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3], 'country': line[4],
-                             'province': line[5], 'city': line[6], 'task_name': line[7]})
+                        line.append('-')
+                        if (line[4] != 'web') and (line[4] != 'Proxy'):
+                            mongo.db.subdomains.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9]})
+                whatweb(taskName,target_type)
+                #     host = line[0].rstrip()
+                    #     ip = line[1].rstrip()
+                    #     port = line[2].rstrip()
 
-                        host = line[0].rstrip()
-                        ip = line[1].rstrip()
-                        port = line[2].rstrip()
-
-                        # 判断CDN
-                        thread_max.acquire()
-                        t = threading.Thread(target=cdn_check, args=(host, ip, port,))
-                        threads.append(t)
-                        t.start()
-                    for j in threads:
-                        j.join()
-                else:
+                    #     # 判断CDN
+                    #     thread_max.acquire()
+                    #     t = threading.Thread(target=cdn_check, args=(host, ip, port,))
+                    #     threads.append(t)
+                    #     t.start()
+                    # for j in threads:
+                    #     j.join()
+            else:
+                mongo.db.tasks.insert({'title': taskName,'target': taskTargets, 'create': create_tm, 'type': 'web'})
+                for target in taskTargets:
+                    target = target.rstrip(' ')
                     webs = Webs(target)
                     resualt = list(webs.values())
                     data = resualt[5:]  # 数据集的数据部分
@@ -205,10 +213,9 @@ def create_task():
                         line.append(taskName)
                         line.append('-')
                         if (line[4] != 'web') and (line[4] != 'Proxy'):
-                            mongo.db.webs.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],
-                                                  'container': line[4], 'country': line[5], 'province': line[6],
-                                                  'city': line[7], 'task_name': line[8], 'tag': line[9]})
-                    whatweb(taskName)
+                            mongo.db.webs.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9]})
+                whatweb(taskName,target_type)
+                    
     return render_template('admin/create-task.html')
 
 
@@ -217,11 +224,12 @@ def create_task():
 @login_required
 def task_del(taskName):
     mongo = PyMongo(current_app)
+    t_type =  mongo.db.tasks.find({'title': taskName}, {'type': 1, '_id': 0}).distinct('type')
     mongo.db.tasks.remove({'title': taskName})
     mongo.db.webs.remove({'task_name': taskName})
     mongo.db.subdomains.remove({'task_name': taskName})
 
-    return redirect(url_for('admin.tasklist'))
+    return redirect(url_for('admin.tasklist',target_type=t_type))
 
 
 # 子域名列表
@@ -230,10 +238,20 @@ def task_del(taskName):
 def subdomain_list(taskName):
     mongo = PyMongo(current_app)
     if taskName is not None:
-        lists = mongo.db.subdomains.find({'task_name': taskName})
+        tags = mongo.db.subdomains.find({'task_name': taskName}, {'tag': 1, '_id': 0}).distinct('tag')  # 只查tag
+        if request.method == 'POST':
+            web_tag = request.form['webtag']
+            if not web_tag:
+                lists = mongo.db.subdomains.find({'task_name': taskName})
+            else:
+                lists = mongo.db.subdomains.find({'task_name': taskName, 'tag': web_tag})
+            return render_template('admin/subdomain-list.html', lists=lists, tags=tags, taskname=taskName, web_tag=web_tag,target_type='subdomain')
+        else:
+            lists = mongo.db.subdomains.find({'task_name': taskName})
+            return render_template('admin/subdomain-list.html', lists=lists, tags=tags, taskname=taskName,target_type='subdomain')
     else:
-        lists = mongo.db.subdomains.find()
-    return render_template('admin/subdomain-list.html', lists=lists)
+        return render_template('admin/subdomain-list.html')
+    
 
 
 # Web资产列表
@@ -249,10 +267,10 @@ def web_list(taskName):
                 lists = mongo.db.webs.find({'task_name': taskName})
             else:
                 lists = mongo.db.webs.find({'task_name': taskName, 'tag': web_tag})
-            return render_template('admin/web-list.html', lists=lists, tags=tags, taskname=taskName, web_tag=web_tag)
+            return render_template('admin/web-list.html', lists=lists, tags=tags, taskname=taskName, web_tag=web_tag,target_type='web')
         else:
             lists = mongo.db.webs.find({'task_name': taskName})
-            return render_template('admin/web-list.html', lists=lists, tags=tags, taskname=taskName)
+            return render_template('admin/web-list.html', lists=lists, tags=tags, taskname=taskName,target_type='web')
     else:
         return render_template('admin/web-list.html')
 # ICON_HASH计算
@@ -285,10 +303,10 @@ def get_keywords():
 
 
 def Subdomain(rootdomain):
-    cmd = '(domain="{dom}" || cert="{dom}") &&  (status_code="200" || status_code="403") '.format(dom=rootdomain)
+    cmd = '(domain="{dom}" || cert="{dom}") &&  (status_code="200" || status_code="403" || status_code="301" || status_code="302") '.format(dom=rootdomain)
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size = "10000"
-    fields = "host,ip,port,title,country,province,city"
+    fields = "host,ip,port,title,server,country,province,city"
     api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
         email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
     headers = {
@@ -329,7 +347,7 @@ def keywords(keywd):
     else:
         return (res)
 
-def keyword(ipc):
+def Webs(ipc):
     cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="403" || status_code=="301" || status_code=="502" || status_code=="404")'
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size = "10000"
@@ -395,29 +413,29 @@ def pass_edit(uid):
 
     return render_template('admin/password-edit.html')
 
-# #设置Cookie(百度的BAIDUID)
-# @bp.route('/cookie-edit', methods=('GET', 'POST'))
-# @login_required
-# def cookie_edit():
-#     old_cookies=''
-#     with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
-#         lines=f.readlines()
-#     for line in lines:
-#         old_cookies += line
-#     if request.method == 'POST':
-#         cookies = request.form['cookies']
-#         error = None
+#设置Cookie(百度的BAIDUID),已经起用3
+@bp.route('/cookie-edit', methods=('GET', 'POST'))
+@login_required
+def cookie_edit():
+    old_cookies=''
+    with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
+        lines=f.readlines()
+    for line in lines:
+        old_cookies += line
+    if request.method == 'POST':
+        cookies = request.form['cookies']
+        error = None
 
-#         if not cookies:
-#             error = 'Cookies不能为空'
+        if not cookies:
+            error = 'Cookies不能为空'
 
-#         if error is not None:
-#             flash(error)
-#         else:
-#             with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
-#                 f.write(cookies)
+        if error is not None:
+            flash(error)
+        else:
+            with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
+                f.write(cookies)
 
-#     return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
+    return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
 
 # 导出URL
 @bp.route('/<string:taskName>/export_url', methods=('GET', 'POST'))
@@ -425,10 +443,15 @@ def export_url(taskName):
     all_url = []
     mongo = PyMongo(current_app)
     web_tag = request.args.get("web_tag")
-    if web_tag:
-        URLS = mongo.db.webs.find({'task_name': taskName, 'tag': web_tag}, {'host': 1, '_id': 0})
+    target_type = request.args.get("target_type")
+    if target_type == 'web':
+        mdb=mongo.db.webs
     else:
-        URLS = mongo.db.webs.find({'task_name': taskName}, {'host': 1, '_id': 0})
+        mdb=mongo.db.subdomains
+    if web_tag:
+        URLS = mdb.find({'task_name': taskName, 'tag': web_tag}, {'host': 1, '_id': 0})
+    else:
+        URLS = mdb.find({'task_name': taskName}, {'host': 1, '_id': 0})
     for url in URLS:
         url = url['host'].rstrip()
         if (url[0:4] == "http"):
@@ -441,7 +464,7 @@ def export_url(taskName):
 
 
 # Web指纹识别
-def resWeb(url, host, taskName):
+def resWeb(url, host, taskName,target_type):
     app = Flask(__name__)
     with app.app_context():
         app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
@@ -451,7 +474,11 @@ def resWeb(url, host, taskName):
         )
         try:
             mongo = PyMongo(app)
-            tags = mongo.db.webs.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
+            if target_type=='web':
+                mdb=mongo.db.webs
+            else:
+                mdb=mongo.db.subdomains
+            tags = mdb.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
             tag=tags['tag']
             resp = requests.get(url, cookies=cookies, timeout=8, verify=False)  # 忽略对 SSL 证书的验证
             resp_err = requests.get(url + '/tt', timeout=8, verify=False)  # 请求不存在的页面去让页面报错
@@ -462,21 +489,25 @@ def resWeb(url, host, taskName):
                 if hitHeads or hitBody or hitBody_err:
                     if tag == '-':
                         print("===========组件信息-{0}：".format(cms) + url)
-                        mongo.db.webs.update({'host': host, 'task_name': taskName}, {'$set': {'tag': cms}})
+                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': cms}})
+                        break
                 else:
                     pass
             resp.close()
             print("--正在识别--" + url)
         except Exception as exs:
-            mongo.db.webs.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
+            mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
         finally:
             mongo.db.client.close()
             mongo = None
             thread_max.release()
 
-def whatweb(taskName):
+def whatweb(taskName,tar_type):
     mongo = PyMongo(current_app)
-    hosts = mongo.db.webs.find({'task_name': taskName}, {'host': 1, '_id': 0})
+    if tar_type == 'web':
+        hosts = mongo.db.webs.find({'task_name': taskName}, {'host': 1, '_id': 0})
+    elif tar_type == 'subdomain':
+        hosts = mongo.db.subdomains.find({'task_name': taskName}, {'host': 1, '_id': 0})
     threads = []
     for hs in hosts:
         if hs['host'][0:4] == 'http':
@@ -486,7 +517,7 @@ def whatweb(taskName):
             host = hs['host']
             url = "http://" + hs['host']
         thread_max.acquire()
-        t = threading.Thread(target=resWeb, args=(url, host, taskName,))
+        t = threading.Thread(target=resWeb, args=(url, host, taskName,tar_type,))
         threads.append(t)
         t.start()
     for j in threads:

@@ -6,12 +6,28 @@
             <div class="layui-row">
 
                 <form class="layui-form">
+
+                    <!-- <div class="layui-form-item">
+                        <label for="task_name" class="layui-form-label">任务类型</label>
+                        <div class="layui-input-inline">
+                            <select name="webtag" lay-verify="" lay-filter="webtag">
+                                <option value="" disabled selected>选择任务类型</option>
+                                {% for tag in tags %}
+                                <option value="{{tag}}">{{tag}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div> -->
+
+
                     <div class="layui-form-item">
                         <label for="task_name" class="layui-form-label">任务名称</label>
                         <div class="layui-input-inline">
                             <input type="text" id="task_name" name="task_name" required="" lay-verify="task_name" autocomplete="off" class="layui-input">
                         </div>
                     </div>
+
+                    
 
                     <div class="layui-form-item">
                         <label for="targets" class="layui-form-label">目标列表</label>
@@ -58,6 +74,7 @@
                     return false;
 
                 });
+                
 
             });
         </script>

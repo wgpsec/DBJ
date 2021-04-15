@@ -7,7 +7,8 @@
                 <div class="layui-col-md12">
                     <div class="layui-card">
                         <div class="layui-card-header">
-                            <li><a onclick="xadmin.open('添加任务','/admin/create-task',450,450)" class="layui-btn layui-btn-normal"><i class="layui-icon"></i>添加任务</a></li>
+                            <li><a onclick="xadmin.open('添加任务',`{{url_for('admin.create_task',target_type=target_type)}}`,450,550)" class="layui-btn layui-btn-normal"><i class="layui-icon"></i>添加任务</a></li>
+                            <!-- <li><a onclick="xadmin.open('添加任务','/admin/create-task',450,550)" class="layui-btn layui-btn-normal"><i class="layui-icon"></i>添加任务</a></li> -->
                         </div> 
                         <div class="layui-card-body layui-table-body layui-table-main">
                             <table class="layui-table layui-form">
@@ -26,12 +27,15 @@
                                       <td>{{list['target']}}</td>
                                       <td>{{list['create']}}</td>
                                       <td class="td-manage">
-                                        <a title="查看子域名" onclick="xadmin.add_tab(`{{list['title']}}-子域名`,`{{ url_for('admin.subdomain_list', taskName=list['title']) }}`);javascript:parent.location.reload();">
-                                            <i class="layui-icon">&#xe64c;</i>
+                                      {% if target_type=='subdomain' %}
+                                        <a title="查看子域名资产" onclick="xadmin.add_tab(`{{list['title']}}-子域名`,`{{ url_for('admin.subdomain_list', taskName=list['title']) }}`);javascript:parent.location.reload();">
+                                            <i class="layui-icon">&#xe857;</i>
                                         </a>
+                                      {% else %}
                                         <a title="查看Web资产" onclick="xadmin.add_tab(`{{list['title']}}-Web资产`,`{{ url_for('admin.web_list', taskName=list['title']) }}`);javascript:parent.location.reload();">
-                                            <i class="layui-icon">&#xe7ae; </i>
+                                            <i class="layui-icon">&#xe652; </i>
                                         </a>
+                                      {% endif %}
                                         <a title="删除任务"  href="{{ url_for('admin.task_del', taskName=list['title']) }}">
                                             <i class="layui-icon" onclick="return confirm('确定删除?');">&#xe640;</i>
                                         </a>

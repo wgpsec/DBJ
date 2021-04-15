@@ -25,6 +25,15 @@
                 table = layui.table,
                 flow = layui.flow;
 
+                //自定义函数
+                function addLink(d) {
+                    if (d['host'].indexOf("https") != -1){
+                        return '<a target="_blank" href="'+d['host']+'"><font size="2" color="blue">'+d['host']+'</font></a>';
+                    }else{
+                        return '<a target="_blank" href="http://'+d['host']+'"><font size="2" color="blue">'+d['host']+'</font></a>';
+                    }
+                };
+
             //自定义验证规则
             form.verify({icourl: [/\S/, 'ICON路径不能为空'],});
             //监听提交(查询按钮)
@@ -45,7 +54,7 @@
                     where: data.field,
                     cols: [[ //表头
                         {field: 'index', title: '序号', width: 60, fixed: 'left', type: 'numbers'}
-                        , {field: 'host', title: '主机地址', width: 160}
+                        , {field: 'host', title: '主机地址', width: 210,templet: addLink}
                         , {field: 'ip', title: 'ip', width: 160}
                         , {field: 'port', title: 'port', width: 80}
                         , {field: 'web_title', title: '网页标题'}
