@@ -145,7 +145,9 @@ def create_task():
                     for line in data[0]:
                         line.append(taskName)
                         line.append('-')
-                        line.append('DirScan')
+                        tmp='DirScan\n'
+                        dir_d=tmp.split('\n')
+                        line.append(dir_d)
                         if (line[4] != 'web') and (line[4] != 'Proxy'):
                             mongo.db.subdomains.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9],'dirscan': line[10]})
                             
@@ -169,7 +171,9 @@ def create_task():
                     for line in data[0]:
                         line.append(taskName)
                         line.append('-')
-                        line.append('DirScan')
+                        tmp='DirScan\n'
+                        dir_d=tmp.split('\n')
+                        line.append(dir_d)
                         if (line[4] != 'web') and (line[4] != 'Proxy'):
                             mongo.db.webs.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9],'dirscan': line[10]})
                 whatweb(taskName,target_type)
@@ -441,8 +445,15 @@ def dirScan(dir_url,target_type,host,taskName):
             #print(str(dir_status),str(dir_ctl),dir_url)
             if (dir_status == 200 or dir_status == 301 or dir_status == 302):
                 old_dir=mdbd.find_one({'host': host, 'task_name': taskName},{'dirscan': 1, '_id': 0})
-                dir_url=old_dir['dirscan']+'\r\n'+dir_url
-                mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': dir_url}})
+                if old_dir['dirscan'][0]=='DirScan':
+                    tmp=dir_url+'\n'
+                    dir_list = tmp.split('\n')
+                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': dir_list}})
+                else:
+                    old_dir['dirscan'].append(dir_url)
+                    # dir_url=old_dir['dirscan']+'\n'+dir_url
+                    # dir_list = dir_url.split('\n')
+                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': old_dir['dirscan']}})
             else:
                 pass
         except Exception as direx:

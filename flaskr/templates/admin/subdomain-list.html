@@ -52,10 +52,11 @@
                                       <td>{{list['web_title']}}</td>
                                       <td>{{list['container']}}</td>
                                       <td >{{list['tag']}}</td>
-                                      <th style="width: 110px;">{{list['ip']}}</th>
-                                      <th >{{list['dirscan']}}</th>
-                                      <th >{{list['province']}}</th>
-                                      <th >{{list['city']}}</th>
+                                      <td style="width: 110px;">{{list['ip']}}</td>
+                                      <!-- <td >{{list['dirscan']}}</td> -->
+                                      <td>{% for dir in list['dirscan']%}<a style="color: red;" href="{{dir}}" target="_blank">{{dir}}</a><br>{% endfor %}</td>
+                                      <td >{{list['province']}}</td>
+                                      <td >{{list['city']}}</td>
                                   </tr>
                                 </tbody>
                                 {% endfor %}

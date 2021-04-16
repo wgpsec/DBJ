@@ -24,7 +24,7 @@
                                 <tbody>
                                   <tr>
                                       <td>{{list['title']}}</td>
-                                      <td>{{list['target']}}</td>
+                                      <td>{% for task in list['target'] %}{{task}}<br>{% endfor %}</td>
                                       <td>{{list['create']}}</td>
                                       <td class="td-manage">
                                       {% if target_type=='subdomain' %}
