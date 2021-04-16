@@ -41,6 +41,7 @@
     <div class="layui-form layui-border-box layui-table-view" lay-filter="LAY-table-1" lay-id="test">
       <div class="layui-table-tool">
           <div class="layui-table-tool-temp"></div>
+          
           <div class="layui-table-tool-self">
             <p style="color:cornflowerblue;float: left;"><b>[ 导出域名  ]</b></p>
               <div class="layui-inline" title="导出" lay-event="LAYTABLE_EXPORT" id="export_struct">
@@ -112,7 +113,7 @@ var ins2=table.render({
   ,method: "post"
   ,where: data.field
   ,cols: [[ //表头
-    {field: 'index', title: '序号', width:60, fixed: 'left', type: 'numbers'}
+     {field: 'index', title: '序号', width:60, fixed: 'left', type: 'numbers'}
     ,{field: 'domain', title: '一级域名',fixed: 'left'}
     ,{field: 'domain_from', title: '数据来源'}
   ]],

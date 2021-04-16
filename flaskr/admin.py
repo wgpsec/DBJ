@@ -24,9 +24,9 @@ from .rules import ruleDatas  # 引入Web组件指纹库
 # 消除安全请求的提示信息,增加重试连接次数
 urllib3.disable_warnings()
 requests.adapters.DEFAULT_RETRIES = 3
-s = requests.session()
 
 # 关闭连接，防止出现最大连接数限制错误
+s = requests.Session()
 s.keep_alive = False
 
 # openssl 拒绝短键，防止SSL错误
@@ -34,6 +34,7 @@ urllib3.util.ssl_.DEFAULT_CIPHERS += 'HIGH:!DH:!aNULL'
 
 # 设置最大线程数
 thread_max = threading.BoundedSemaphore(value=305)
+thread_max_dir = threading.BoundedSemaphore(value=30)
 
 pool = redis.ConnectionPool(host='127.0.0.1', port=6379, decode_responses=True, encoding='UTF-8')
 re_dis = redis.Redis(connection_pool=pool)
@@ -41,56 +42,9 @@ re_dis = redis.Redis(connection_pool=pool)
 targets = []  # 所有目标存储用list
 ipc_list = []  # 本次任务所有ip段
 
-cdn_headers = [
-    "xcs",
-    "via",
-    "x-via",
-    "x-cdn",
-    "x-cdn-forward",
-    "x-ser",
-    "x-cf1",
-    "cache",
-    "x-cache",
-    "x-cached",
-    "x-cacheable",
-    "x-hit-cache",
-    "x-cache-status",
-    "x-cache-hits",
-    "x-cache-lookup",
-    "cc_cache",
-    "webcache",
-    "chinacache",
-    "x-req-id",
-    "x-requestid",
-    "cf-request-id",
-    "x-github-request-id",
-    "x-sucuri-id",
-    "x-amz-cf-id",
-    "x-airee-node",
-    "x-cdn-provider",
-    "x-fastly",
-    "x-iinfo",
-    "x-llid",
-    "sozu-id",
-    "x-cf-tsc",
-    "x-ws-request-id",
-    "fss-cache",
-    "powered-by-chinacache",
-    "verycdn",
-    "yunjiasu",
-    "skyparkcdn",
-    "x-beluga-cache-status",
-    "x-content-type-options",
-    "x-download-options",
-    "x-proxy-node",
-    "access-control-max-age",
-    "age",
-    "etag",
-    "expires",
-    "pragma",
-    "cache-control",
-    "last-modified"
-]
+cdn_headers = ["x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
+dir_dict=['/admin/', '/manager/', '/manage/', '/member/', '/UpLoad/', '/containers/json/', '/.git/config/', '/.svn/entries/', '/.DS_Store', '/.hg/', '/CVS/Entries/', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config/', '/config/', '/include/', '/public/', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
+
 cookies = dict(rememberMe='axxxxxxxxxx123456')
 em = b'NTFlZjc4Y2U1YjY3M2JjMmUyOGQxYzBiNTNiZDU3Y2Y3NjAzYzExMzNhY2U0NWFmZGM1OTQ5Nzkw\nNWNiNTczYg==\n'
 pik = b'NmY5YzQwMWEzOTBkYzM4NTI0YzZiOGRhNWIwNDA3ZDI1OTA3ZmYwMDA4ODBjZDAxNTUyMTIyZjhm\nM2NjYWQ1ZA==\n'
@@ -135,18 +89,21 @@ def cdn_check(host, ip, port):
             database='webapp'
         )
     mongo = PyMongo(app)
+    s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
+    s.headers.update({'Connection': 'close'})
+
     if host[0:4] == 'http':
-        url = host
+        url = 'https://'+ip+':'+port
     else:
-        url = 'http://' + host
+        url = 'http://' +ip+':'+port
     try:
-        resp = requests.get(url, timeout=15, verify=False)
-        print('正在检测CDN ' + host)
+        resp = s.get(url, timeout=15, verify=False)
+        print('正在检测CDN... ' + host)
         for cdn_header in cdn_headers:
             hitCDN = re.findall(cdn_header, str(resp.headers))
             if hitCDN:
                 mongo.db.subdomains.update({'ip': ip, 'port': port}, {'$set': {'ip': 'CDN'}})
-                print(host + " 存在CDN")
+                print(host + " 此目标存在CDN!!!")
             else:
                 pass
     except Exception as ex:
@@ -188,20 +145,20 @@ def create_task():
                     for line in data[0]:
                         line.append(taskName)
                         line.append('-')
+                        line.append('DirScan')
                         if (line[4] != 'web') and (line[4] != 'Proxy'):
-                            mongo.db.subdomains.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9]})
+                            mongo.db.subdomains.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9],'dirscan': line[10]})
+                            
+                            # 判断CDN
+                            thread_max.acquire()
+                            t = threading.Thread(target=cdn_check, args=(line[0], line[1], line[2],))
+                            threads.append(t)
+                            t.start()
+                            for j in threads:
+                                j.join()
+                #开始识别指纹               
                 whatweb(taskName,target_type)
-                #     host = line[0].rstrip()
-                    #     ip = line[1].rstrip()
-                    #     port = line[2].rstrip()
 
-                    #     # 判断CDN
-                    #     thread_max.acquire()
-                    #     t = threading.Thread(target=cdn_check, args=(host, ip, port,))
-                    #     threads.append(t)
-                    #     t.start()
-                    # for j in threads:
-                    #     j.join()
             else:
                 mongo.db.tasks.insert({'title': taskName,'target': taskTargets, 'create': create_tm, 'type': 'web'})
                 for target in taskTargets:
@@ -212,8 +169,9 @@ def create_task():
                     for line in data[0]:
                         line.append(taskName)
                         line.append('-')
+                        line.append('DirScan')
                         if (line[4] != 'web') and (line[4] != 'Proxy'):
-                            mongo.db.webs.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9]})
+                            mongo.db.webs.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9],'dirscan': line[10]})
                 whatweb(taskName,target_type)
                     
     return render_template('admin/create-task.html')
@@ -462,9 +420,41 @@ def export_url(taskName):
             all_url.append(url)
     return render_template('admin/exp-url.html', all_url=all_url)
 
+#目录扫描
+def dirScan(dir_url,target_type,host,taskName):
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
+            host='localhost',
+            port=27017,
+            database='webapp'
+        )
+        try:
+            mongo = PyMongo(app)
+            if target_type=='web':
+                mdbd=mongo.db.webs
+            else:
+                mdbd=mongo.db.subdomains
+            resp_dir = s.get(dir_url,timeout=10, verify=False)
+            resp_dir.close()
+            dir_status = resp_dir.status_code
+            #print(str(dir_status),str(dir_ctl),dir_url)
+            if (dir_status == 200 or dir_status == 301 or dir_status == 302):
+                old_dir=mdbd.find_one({'host': host, 'task_name': taskName},{'dirscan': 1, '_id': 0})
+                dir_url=old_dir['dirscan']+'\r\n'+dir_url
+                mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': dir_url}})
+            else:
+                pass
+        except Exception as direx:
+            print(dir_url+' '+str(direx))
+        finally:
+            mongo.db.client.close()
+            mongo = None
+            thread_max_dir.release()
 
 # Web指纹识别
 def resWeb(url, host, taskName,target_type):
+    threads_dir=[]
     app = Flask(__name__)
     with app.app_context():
         app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
@@ -479,9 +469,10 @@ def resWeb(url, host, taskName,target_type):
             else:
                 mdb=mongo.db.subdomains
             tags = mdb.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
-            tag=tags['tag']
-            resp = requests.get(url, cookies=cookies, timeout=8, verify=False)  # 忽略对 SSL 证书的验证
-            resp_err = requests.get(url + '/tt', timeout=8, verify=False)  # 请求不存在的页面去让页面报错
+            tag=tags['tag'] 
+
+            resp = s.get(url, cookies=cookies, timeout=15, verify=False)
+            resp_err = s.get(url + '/tt', timeout=15, verify=False)  # 请求不存在的页面去让页面报错
             for cms, finger in ruleDatas.items():
                 hitHeads = re.findall(finger, str(resp.headers))
                 hitBody = re.findall(finger, resp.text)
@@ -493,10 +484,22 @@ def resWeb(url, host, taskName,target_type):
                         break
                 else:
                     pass
+
+            print("--未识别--" + url)
             resp.close()
-            print("--正在识别--" + url)
+            #目录扫描
+            for dd in dir_dict:
+                dir_url=url+dd
+                thread_max_dir.acquire()
+                t_dir = threading.Thread(target=dirScan, args=(dir_url,target_type,host,taskName,))
+                threads_dir.append(t_dir)
+                t_dir.start()
+            for ddx in threads_dir:
+                ddx.join()
+
         except Exception as exs:
             mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
+            print("--连接失败--" + url)
         finally:
             mongo.db.client.close()
             mongo = None

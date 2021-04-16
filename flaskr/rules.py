@@ -1,7 +1,7 @@
 #coding=UTF-8
 ruleDatas = {
 ###中间件
-'Shiro':'(deleteMe|rememberMe=)',
+'Shiro':'(deleteMe)',
 'Weblogic':'(Error 404--Not Found|Hypertext Transfer Protocol -- HTTP/1.1)',
 'Jboss':'(Welcome to JBoss|jboss.css)',
 'Tomcat-默认页面':'(/manager/html|/manager/status)',
@@ -10,7 +10,7 @@ ruleDatas = {
 'Tongda-通达OA':'(tongda.ico|onmouseover="this.focus()")',
 'Seeyon-致远OA':'(/seeyon/USER-DATA/IMAGES/LOGIN/login.gif|/seeyon/common|SY8045|Seeyon-Server/1.0)',
 '用友NC':'(uclient.yonyou.com)',
-'Ecology-泛微OA':'(ecology_JSessionid|/js/ecology8/lang/weaver_lang_7_wev8.js|/wui/theme/ecology)',
+'Ecology-泛微OA':'(ecology_JSessionid|/js/ecology8/lang/weaver_lang_7_wev8.js|`/wui/theme`)',
 'e-Bridge-泛微云桥':'(/main/login/images/loginlogo.png|e-Bridge)',
 'E-Mobile':'(weaver,e-mobile|E-Mobile&nbsp;)',
 'Zentao-禅道':'(zentaosid|/zentao/js|/zentao/theme/|/theme/default/images/main/zt-logo.png)',
@@ -23,6 +23,7 @@ ruleDatas = {
 ###内容管理CMS
 'Typecho-博客':'(Typecho</a>)',
 '微三云管理系统':'(WSY_logo|管理系统 MANAGEMENT SYSTEM)',
+'WordPress':'wp-content',
 
 ###网站管理 集群、监控、仓库、队列 
 'Gitlab':'(assets/gitlab_logo)',

@@ -194,12 +194,11 @@ def get_company_info(company_id, level, regrate, hunit):
         resp.close()
 
         # 域名入缓存数据库
-        if website[0:4]=="www.":
+        if website[0:3]=='www':
             dom = website[4:]
-            key_data={'domain':dom,'domain_from':"爱企查-"+company_name}
+            key_data={'domain':dom,'domain_from':"爱企查"}
             domains.append(key_data)
-        else:
-            pass
+
 
         if level=='主公司':
             pname=company_name
@@ -368,7 +367,6 @@ def getinfo():
 # 域名统计数据表查询接口
 @bp.route('/getdomains', methods=('GET', 'POST'))
 def getdomains():
-    domains.clear()
     company = request.form['company']
     if not re_dis.exists("domains:key:" + company):
         re_dis.set("domains:key:" + company, company, ex=3600)
@@ -390,4 +388,5 @@ def getdomains():
     else:
         domain_data = json.loads(re_dis.get("domains:" + company))
         res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
+    domains.clear()
     return jsonify(res_data)
