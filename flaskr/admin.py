@@ -442,7 +442,6 @@ def dirScan(dir_url,target_type,host,taskName):
             resp_dir = s.get(dir_url,timeout=10, verify=False)
             resp_dir.close()
             dir_status = resp_dir.status_code
-            #print(str(dir_status),str(dir_ctl),dir_url)
             if (dir_status == 200 or dir_status == 301 or dir_status == 302):
                 print(dir_url + '   命中目录, 请验证！！！')
                 old_dir=mdbd.find_one({'host': host, 'task_name': taskName},{'dirscan': 1, '_id': 0})
@@ -451,10 +450,15 @@ def dirScan(dir_url,target_type,host,taskName):
                     dir_list = tmp.split('\n')
                     mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': dir_list}})
                 elif len(old_dir['dirscan']) > 5:
-                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': '-'}})
+                    bad_dir = '-'.split('\n')
+                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': bad_dir}})
                 else:
-                    old_dir['dirscan'].append(dir_url)
-                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': old_dir['dirscan']}})
+                    if old_dir['dirscan'][0]=='-':
+                        print(dir_url+" 属于误报XXX")
+                        pass
+                    else:
+                        old_dir['dirscan'].append(dir_url)
+                        mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': old_dir['dirscan']}})
             else:
                 pass
         except Exception as direx:
