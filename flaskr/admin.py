@@ -43,7 +43,7 @@ targets = []  # 所有目标存储用list
 ipc_list = []  # 本次任务所有ip段
 
 cdn_headers = ["x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
-dir_dict=['/admin/', '/manager/', '/manage/', '/member/', '/UpLoad/', '/containers/json/', '/.git/config/', '/.svn/entries/', '/.DS_Store', '/.hg/', '/CVS/Entries/', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config/', '/config/', '/include/', '/public/', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
+dir_dict=['/admin', '/manager', '/manage', '/member', '/UpLoad', '/containers/json', '/.git/config', '/.svn/entries', '/.DS_Store', '/.hg', '/CVS/Entries', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config', '/config', '/include', '/public', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
 
 cookies = dict(rememberMe='axxxxxxxxxx123456')
 em = b'NTFlZjc4Y2U1YjY3M2JjMmUyOGQxYzBiNTNiZDU3Y2Y3NjAzYzExMzNhY2U0NWFmZGM1OTQ5Nzkw\nNWNiNTczYg==\n'
@@ -444,15 +444,16 @@ def dirScan(dir_url,target_type,host,taskName):
             dir_status = resp_dir.status_code
             #print(str(dir_status),str(dir_ctl),dir_url)
             if (dir_status == 200 or dir_status == 301 or dir_status == 302):
+                print(dir_url + '   命中目录, 请验证！！！')
                 old_dir=mdbd.find_one({'host': host, 'task_name': taskName},{'dirscan': 1, '_id': 0})
                 if old_dir['dirscan'][0]=='DirScan':
                     tmp=dir_url+'\n'
                     dir_list = tmp.split('\n')
                     mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': dir_list}})
+                elif len(old_dir['dirscan']) > 25:
+                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': '误报过多'}})
                 else:
                     old_dir['dirscan'].append(dir_url)
-                    # dir_url=old_dir['dirscan']+'\n'+dir_url
-                    # dir_list = dir_url.split('\n')
                     mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': old_dir['dirscan']}})
             else:
                 pass

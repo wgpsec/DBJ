@@ -61,7 +61,7 @@
                                       <td>{{list['container']}}</td>
                                       <td >{{list['tag']}}</td>
                                       <th style="width: 110px;">{{list['ip']}}</th>
-                                      <th >{{list['dirscan']}}</th>
+                                      <td>{% for dir in list['dirscan']%}<a style="color: blue;" href="{{dir}}" target="_blank">{{dir}}</a><br>{% endfor %}</td>
                                       <th >{{list['province']}}</th>
                                       <th >{{list['city']}}</th>
                                   </tr>
