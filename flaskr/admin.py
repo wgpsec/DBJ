@@ -450,8 +450,8 @@ def dirScan(dir_url,target_type,host,taskName):
                     tmp=dir_url+'\n'
                     dir_list = tmp.split('\n')
                     mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': dir_list}})
-                elif len(old_dir['dirscan']) > 25:
-                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': '误报过多'}})
+                elif len(old_dir['dirscan']) > 5:
+                    mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': '-'}})
                 else:
                     old_dir['dirscan'].append(dir_url)
                     mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': old_dir['dirscan']}})

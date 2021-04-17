@@ -34,7 +34,7 @@ ruleDatas = {
 'Nexus':'(Nexus Repository Manager|NX-ANTI-CSRF-TOKEN)',
 'Harbor':'(harbor-lang|<title>Harbor</title>)',
 'Jira':'(jira.webresources)',
-'Jenkins':'([Jenkins]|"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z")',
+'Jenkins':'([Jenkins]|M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z)',
 'RabbitMQ':'(<title>RabbitMQ Management</title>)',
 '360企业版':'(360EntWebAdminMD5Secret)',
 '360主机卫士':'(zhuji.360.cn)',
