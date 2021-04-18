@@ -24,6 +24,7 @@ ruleDatas = {
 'Typecho-博客':'(Typecho</a>)',
 '微三云管理系统':'(WSY_logo|管理系统 MANAGEMENT SYSTEM)',
 'WordPress':'wp-content',
+'ThinkCMF':'(ThinkCMF|{Simple content manage Framework)',
 
 ###网站管理 集群、监控、仓库、队列 
 'Gitlab':'(assets/gitlab_logo)',
