@@ -26,6 +26,16 @@ ruleDatas = {
 'WordPress':'wp-content',
 'ThinkCMF':'(ThinkCMF|{Simple content manage Framework)',
 
+###开发框架 接口文档
+'ThinkPHP-3.x':'(Simple OOP PHP Framework)',
+'ThinkPHP':'(ThinkPHP</a>|十年磨一剑-为API开发设计的高性能框架)|<h1>页面错误！请稍后再试～</h1>',
+'Spring-Boot开发平台':'(<title>Spring Boot开发平台</title>)',
+'Swagger UI':'(/swagger-ui.css|swagger-ui-bundle.js)',
+
+###邮件服务器
+'Exchange':'(/owa/auth.owa)',
+'CoreMail':'(coremail/common)',
+
 ###网站管理 集群、监控、仓库、队列 
 'Gitlab':'(assets/gitlab_logo)',
 '宝塔-BT':'(app.bt.cn/static/app.png|安全入口校验失败)',
@@ -37,21 +47,20 @@ ruleDatas = {
 'Jira':'(jira.webresources)',
 'Jenkins':'(M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z)',
 'RabbitMQ':'(<title>RabbitMQ Management</title>)',
-'360企业版':'(360EntWebAdminMD5Secret)',
 '360主机卫士':'(zhuji.360.cn)',
 '360网站卫士':'(360wzb)',
 '360站长平台':'(360-site-verification)',
 
-###开发框架 接口文档
-'ThinkPHP-3.x':'(Simple OOP PHP Framework)',
-'ThinkPHP':'(ThinkPHP</a>|十年磨一剑-为API开发设计的高性能框架)|<h1>页面错误！请稍后再试～</h1>',
-'Spring-Boot开发平台':'(<title>Spring Boot开发平台</title>)',
-'Swagger UI':'(/swagger-ui.css|swagger-ui-bundle.js)',
 
 ###网络设备
 'Ruijie-锐捷':'(4008 111 000)',
 'Inspur-浪潮服务器IPMI管理口':'(img/inspur_logo.png)',
 'Huawei SMC':'(Script/SmcScript.js?version=)',
+'Sangfor-深信服VPN':'(login_psw.csp|loginPageSP/loginPrivacy.js)',
+'Sangfor-深信服上网行为管理':'(utccjfaewjb)',
+'Sangfor-深信服应用交付报表系统':'(report/js/prng4.js|/reportCenter/index.php?cls_mode=cluster_mode_others)',
+'Sangfor-深信服WAF':'(commonFunction.js)',
+'Sangfor-深信服防火墙':'(SANGFOR FW)',
 '华为安全设备':'(sweb-lib/resource/)',
 '华为_HUAWEI_SRG2220':'(HUAWEI SRG2220)',
 '华为 NetOpen':'(/netopen/theme/css/inFrame.css)',
@@ -87,14 +96,8 @@ ruleDatas = {
 'CISCO VPN':'(/+CSCOE+/logon.html)',
 'CISCO-CX20':'(CISCO-CX20)',
 '网御 VPN':'(vpn/common/js/leadsec.js|/vpn/user/common/custom/auth_home.css)',
-'Sangfor-深信服VPN':'(login_psw.csp|loginPageSP/loginPrivacy.js)',
-'Sangfor-深信服上网行为管理':'(utccjfaewjb)',
-'Sangfor-深信服应用交付报表系统':'(report/js/prng4.js|/reportCenter/index.php?cls_mode=cluster_mode_others)',
-'Sangfor-深信服WAF':'(commonFunction.js|rsa.js)',
-'Sangfor-深信服防火墙':'(SANGFOR FW)',
 '绿盟下一代防火墙':'(NSFOCUS NF)',
 '启明星辰天清汉马USG防火墙':'(/cgi-bin/webui?op=get_product_model)',
-'阿里云CDN':'(cdn.aliyuncs.com)',
 '万户ezOFFICE':'(LocLan)',
 '万户网络':'(css/css_whir.css)',
 'TP-LINK Wireless WDR3600':'(TP-LINK Wireless WDR3600)',
@@ -105,9 +108,6 @@ ruleDatas = {
 'Citrix-XenServer':'(Citrix Systems|Inc. XenServer)',
 'Juniper_vpn':'(welcome.cgi\\?p=logo|/images/logo_juniper_reversed.gif)',
 
-###邮件服务器
-'Exchange':'(/owa/auth.owa)',
-'CoreMail':'(coremail/common)',
 
 ###大数据相关
 'Spark_Master':'(Spark Master at)',
