@@ -37,7 +37,7 @@ ruleDatas = {
 'CoreMail':'(coremail/common)',
 
 ###网站管理 集群、监控、仓库、队列 
-'Gitlab':'(assets/gitlab_logo)',
+'Gitlab':'(assets/gitlab_logo|GitLab</title>)',
 '宝塔-BT':'(app.bt.cn/static/app.png|安全入口校验失败)',
 'phpMyAdmin':'(phpmyadmin.css|img/logo_right.png)',
 'Zabbix':'(zbx_sessionid|images/general/zabbix.ico|Zabbix SIA)',
@@ -56,6 +56,7 @@ ruleDatas = {
 'Ruijie-锐捷':'(4008 111 000)',
 'Inspur-浪潮服务器IPMI管理口':'(img/inspur_logo.png)',
 'Huawei SMC':'(Script/SmcScript.js?version=)',
+'网康下一代防火墙':'(网康下一代防火墙</title>|北京网康科技有限公司)',
 'Sangfor-深信服VPN':'(login_psw.csp|loginPageSP/loginPrivacy.js)',
 'Sangfor-深信服上网行为管理':'(utccjfaewjb)',
 'Sangfor-深信服应用交付报表系统':'(report/js/prng4.js|/reportCenter/index.php?cls_mode=cluster_mode_others)',
