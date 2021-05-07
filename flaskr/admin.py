@@ -141,7 +141,7 @@ def create_task():
                     target = target.rstrip(' ')
                     subs = Subdomain(target)
                     resualt = list(subs.values())
-                    data = resualt[5:]  # 数据集的数据部分
+                    data = resualt[4:]  # 数据集的数据部分
                     for line in data[0]:
                         line.append(taskName)
                         line.append('-')
@@ -167,7 +167,8 @@ def create_task():
                     target = target.rstrip(' ')
                     webs = Webs(target)
                     resualt = list(webs.values())
-                    data = resualt[5:]  # 数据集的数据部分
+                    #print(resualt[4])
+                    data = resualt[4:]  # 数据集的数据部分
                     for line in data[0]:
                         line.append(taskName)
                         line.append('-')
