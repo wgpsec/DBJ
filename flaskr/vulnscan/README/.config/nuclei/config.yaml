@@ -1,0 +1,158 @@
+# nuclei.exe config file
+
+# directory storing nuclei-templates
+update-directory: C:\Users\wintrysec\Desktop\DBJ\flaskr\vulnscan/nuclei-templates
+
+# file containing resolver list for nuclei
+#resolvers: 
+
+# list of urls to run templates on
+#list: 
+
+# url of the proxy server
+#proxy-url: 
+
+# custom header.
+#header: []
+
+# maximum number of templates executed in parallel
+concurrency: 50
+
+# local nuclei reporting database (always use this to persistent report data)
+#report-db: 
+
+# use system dns resolving as error fallback
+#system-resolvers: false
+
+# only run newly added templates
+#new-templates: false
+
+# expose nuclei metrics on a port
+#metrics: false
+
+# port to expose nuclei metrics on
+#metrics-port: 9092
+
+# number of times to retry a failed request
+#retries: 1
+
+# shows the installed nuclei-templates version
+#templates-version: false
+
+# tags to execute templates for
+#tags: []
+
+# interactsh server url
+#interactsh-url: https://interact.sh
+
+# templates to run, supports single and multiple templates using directory.
+#templates: []
+
+# use a user defined project folder, temporary folder is used if not specified but enabled
+#project-path: 
+
+# enable passive http response processing mode
+#passive: false
+
+# exclude templates with the provided tags
+#exclude-tags: []
+
+# do not use interactsh server for blind interaction polling
+#no-interactsh: false
+
+# templates to run based on severity, supports single and multiple severity.
+#severity: []
+
+# debugging request
+#debug-req: false
+
+# display stats of the running scan
+#stats: false
+
+# maximum requests to send per second
+rate-limit: 2500
+
+# workflows to run for nuclei
+#workflows: []
+
+# file to write output to (optional)
+#output: 
+
+
+# download / updates nuclei community templates
+#update-templates: false
+
+# directory on disk to export reports in markdown to
+#disk-export: 
+
+# templates to exclude, supports single and multiple templates using directory.
+#exclude: []
+
+# stop processing http requests at first match (this may break template/workflow logic)
+#stop-at-first-path: false
+
+# maximum number of hosts analyzed in parallel per template
+bulk-size: 50
+
+# use a project folder to avoid sending same request multiple times
+#project: false
+
+# list available templates
+#tl: false
+
+# don't display metadata for the matches
+#no-meta: false
+
+# number of seconds between each stats line
+#stats-interval: 5
+
+# show only results in output
+#silent: false
+
+# show verbose output
+#verbose: false
+
+# time to wait in seconds before timeout
+#timeout: 5
+
+# seconds to wait for each page in headless
+#page-timeout: 20
+
+# extra time for interaction polling before exiting
+#interactions-cooldown-period: 5
+
+# write json output to files
+#json: false
+
+# nuclei reporting module configuration file
+#report-config: 
+
+# enable headless browser based templates support
+#headless: false
+
+# show the browser on the screen
+#show-browser: false
+
+# show version of nuclei
+#version: false
+
+# nuclei configuration file
+#config: 
+
+# debugging response
+#debug-resp: false
+
+# file to write sent requests trace log
+#trace-log: 
+
+# number of seconds before each interaction poll request
+#interactions-poll-duration: 5
+
+# url of the proxy socks server
+#proxy-socks-url: 
+
+# debugging request and responses
+#debug: false
+
+# number of requests to keep in interactions cache
+#interactions-cache-size: 5000

@@ -20,6 +20,7 @@ import IPy
 import redis
 import pymmh3
 from .rules import ruleDatas  # 引入Web组件指纹库
+from .vulnscan import vuln
 
 # 消除安全请求的提示信息,增加重试连接次数
 urllib3.disable_warnings()
@@ -43,7 +44,7 @@ targets = []  # 所有目标存储用list
 ipc_list = []  # 本次任务所有ip段
 
 cdn_headers = ["x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
-dir_dict=['/admin', '/manager', '/manage', '/member', '/UpLoad', '/containers/json', '/.git/config/', '/.svn/entries/', '/.DS_Store/', '/.hg/', '/CVS/Entries/', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config', '/config', '/include', '/public', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
+dir_dict=['/admin', '/manager', '/manage', '/member', '/UpLoad', '/containers/json', '/.git/config', '/.svn/entries', '/.DS_Store', '/.hg', '/CVS/Entries', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config', '/config', '/include', '/public', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
 
 cookies = dict(rememberMe='axxxxxxxxxx123456')
 em = b'NTFlZjc4Y2U1YjY3M2JjMmUyOGQxYzBiNTNiZDU3Y2Y3NjAzYzExMzNhY2U0NWFmZGM1OTQ5Nzkw\nNWNiNTczYg==\n'
@@ -614,3 +615,23 @@ def clear_redis():
 @bp.route('/poc-scan', methods=('GET', 'POST'))
 def poc_scan():
     return render_template('admin/poc-scan.html')
+
+# 漏扫结果接口
+@bp.route('/get_vulnable', methods=["POST", "GET"])
+def get_vulnable():
+    vuln_targets = request.form['vuln_targets']
+    app_name=request.form['app_name']
+    os.chdir('flaskr/vulnscan')
+    #写入到urls.txt文件
+    with open('urls.txt','w',encoding='utf-8') as f:
+        f.write(vuln_targets)
+        f.close()
+    vuln.vuln_scan(app_name)
+    os.chdir('../../')
+    os.system('whoami ')
+
+    re_dis.set("vulns", json.dumps(vuln.vuln_list), ex=3600)
+    vuln_data = json.loads(re_dis.get("vulns"))
+    res_data = {"code": 0, "msg": None, "count": len(vuln_data), "data": vuln_data}
+
+    return jsonify(res_data)

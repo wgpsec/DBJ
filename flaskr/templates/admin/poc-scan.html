@@ -6,57 +6,81 @@
     <legend>目标列表</legend>
   </fieldset>
 
+  <form class="layui-form">
   <div class="layui-form-item">
-      <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" style="margin-left: 2%;">设置代理</button>
-      <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1">开始扫描</button>
+      <button type="submit" class="layui-btn" lay-submit="" lay-filter="proxy_socks" style="margin-left: 2%;">设置代理</button>
+      <button type="submit" class="layui-btn" lay-submit="" lay-filter="scan">开始扫描</button>
   </div>
 
   <div class="layui-form-item layui-form-text">
-      <textarea placeholder="请输入目标URL" class="layui-textarea" style="margin-left: 2%;width: 95%;"></textarea>
+      <textarea name="vuln_targets" lay-verify="vuln_targets" placeholder="请输入目标URL" class="layui-textarea" style="margin-left: 2%;width: 95%;"></textarea>
   </div>
+ </form>
 
   <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
     <legend>扫描选项</legend>
   </fieldset>
   
-  <div id="test1" class="demo-transfer" style="margin-left: 2%;"></div>
+  <div id="poc_scan" class="demo-transfer" style="margin-left: 2%;"></div>
+  
 
   <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
     <legend>扫描结果</legend>
   </fieldset>
-  <table style="margin-left: 2%;" id="demo" lay-filter="test" ></table>
+  <table style="margin-left: 2%;" id="vuln_results" lay-filter="test" ></table>
+
 <script>
 layui.use(['transfer','table'], function(){
   var transfer = layui.transfer;
   var table = layui.table;
+  var form = layui.form;
+  var layer = layui.layer;
 
-  //渲染表格
-  table.render({
-    elem: '#demo'
-    ,height: 312
-    ,url: '/' //数据接口
-    ,page: true //开启分页
-    ,cols: [[ //表头
-      {field: 'id', title: 'ID', width:80, fixed: 'left'}
-      ,{field: 'username', title: '目标地址', width:200}
-      ,{field: 'sex', title: '漏洞名称', width:200, sort: true}
-    ]]
-  });
-
-     
-      //渲染
-      transfer.render({
-        elem: '#test1'  //绑定元素
-        ,title: ['全部POC', '扫描队列']  //自定义标题
+  //渲染POC列表
+  transfer.render({
+        elem: '#poc_scan'  //绑定元素
+        ,title: ['Web 应用 POC 列表（请单选）', '扫描队列（要测试的应用）']  //自定义标题
         ,showSearch: true//显示搜索框
         ,data: [
-          {"title": "李白", "disabled": "", "checked": ""}
-          ,{"title": "杜甫", "disabled": "", "checked": ""}
-          ,{ "title": "温酒", "disabled": "", "checked": ""}
-        ]
-        ,id: 'demo1' //定义索引,即第几个框
+          //OA协同办公
+          //CMS
+          {"value": "ThinkPHP",  "title": "ThinkPHP"},
+          {"value": "Wordpress",  "title": "Wordpress"}
+        ],
+        parseData: function(data){
+          return {
+            "value": data.value, //数据值
+            "title": data.title //数据标题
+          }
+        },
+        id: 'start_scan', //定义索引,即第几个框
       });
+
+  //自定义验证规则
+  form.verify({vuln_targets: [/\S/, '目标不能为空'],});
+  
+  //监听提交(查询按钮)
+  form.on('submit(scan)', function (data) {
+    var getData = transfer.getData('start_scan'); //获取右侧数据
+    app_name=getData[0]['title']
+    layer.alert('正在扫描 <font color="red">'+app_name+'</font> 相关漏洞<br/>请在服务端查看扫描进度......');
+    
+    data.field['app_name']=app_name;
+    //console.log(data.field);
+    table.render({
+      elem: '#vuln_results', height: 450,
+      loading: true,
+      url: "get_vulnable", //数据接口
+      method: "post",
+      where: data.field,
+      cols: [[ //表头
+        {field: 'vuln_name', title: '漏洞名称', width:250, sort: true},
+        {field: 'vuln_url', title: '目标地址', width:1150}
+      ]]});
+      return false;
     });
+
+});
 </script>
 </body>
 {% endblock %}

@@ -1,21 +1,15 @@
 # conding=utf-8
-import base64
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for, jsonify, current_app, Flask
+    Blueprint, render_template, request, jsonify,
 )
 from requests.packages import urllib3
 import threading
 import requests
 import random
 import json
-import sys
-import os
 import re
 import redis
-import calendar
-
-import time
 
 bp = Blueprint('enscan', __name__, url_prefix='/enscan')
 
@@ -36,11 +30,12 @@ s = requests.Session()
 s.keep_alive = False
 
 errors = []  # 错误复检列表
-proxys = []  # 代理列表
 data_list = []  #存储每个公司信息
-domains = []  # 一级域名列表
-sub_company_id = []  # 二级单位的PID列表
 success_company_ids = []  # 成功查到的所有公司ID
+sub_company_id = []  # 二级单位的PID列表
+
+domains = []  # 一级域名列表，用于处理重复数据
+domains_rs = []  # 一级域名结果展示列表
 icp_targets = []          # 所有公司名，用于ICP反查
 
 # HTTP请求-head头
@@ -51,7 +46,6 @@ headers = {
 
 def clear_lists():
     errors.clear()
-    proxys.clear()
     data_list.clear()
     sub_company_id.clear()
     success_company_ids.clear()
@@ -97,7 +91,10 @@ def get_icp(target):
     rs = re.findall(pat, resp.text)
     for dom in rs:
         key_data={'domain': dom,'domain_from': "ICP备案查询"}
-        domains.append(key_data)
+        print(key_data)
+        if dom not in domains:
+            domains.append(dom)
+            domains_rs.append(key_data)
 
 
 def get_whois(company_name):
@@ -119,7 +116,12 @@ def get_whois(company_name):
                 dns_domains = re.findall(pat, resp.text)
                 for domain in dns_domains:
                     key_data={'domain': domain,'domain_from': "whois查询"}
-                    domains.append(key_data)
+                    print(key_data)
+                    for domrs in domains:
+                        print(domrs)
+                    if domain not in domains:
+                        domains.append(domain)
+                        domains_rs.append(key_data)
         else:
             url = "http://whois.chinaz.com/reverse?host={0}&ddlSearchMode=2&st=&startDay=&endDay=&wTimefilter=$wTimefilter&page=1".format(
                 company_name)
@@ -128,7 +130,10 @@ def get_whois(company_name):
             dns_domains = re.findall(pat, resp.text)
             for domain in dns_domains:
                 key_data={'domain': domain,'domain_from': "whois查询"}
-                domains.append(key_data)
+                print(key_data)
+                if domain not in domains:
+                    domains.append(domain)
+                    domains_rs.append(key_data)
                     
     except Exception as ef:
         print(str(ef))
@@ -136,7 +141,7 @@ def get_whois(company_name):
 
 def parse_index(content):
     tag_1 = 'window.pageData ='
-    tag_2 = '/* eslint-enable */</script><script data-app'
+    tag_2 = 'window.isSpider = null;'
 
     idx_1 = content.find(tag_1)
     idx_2 = content.find(tag_2)
@@ -165,6 +170,7 @@ def get_root_companyid(company_name):
         return root_company_id
     except Exception as ex_com:
         print(str(ex_com) + '请设置Cookie并通过验证')
+
 def get_pname(pid):
     api = 'https://aiqicha.baidu.com/company_detail_'
     api = api + str(pid)
@@ -178,6 +184,7 @@ def get_pname(pid):
         return company_name
     except Exception as ex:
         print(ex)
+
 def get_company_info(company_id, level, regrate, hunit):
     global pname
     api = 'https://aiqicha.baidu.com/company_detail_'
@@ -197,7 +204,8 @@ def get_company_info(company_id, level, regrate, hunit):
         if website[0:3]=='www':
             dom = website[4:]
             key_data={'domain':dom,'domain_from':"爱企查"}
-            domains.append(key_data)
+            domains.append(dom)
+            domains_rs.append(key_data)
 
 
         if level=='主公司':
@@ -268,73 +276,13 @@ def Two_sub(pid):
         j.join()
 
 
-def Three_sub():
-    for pid in sub_company_id:
-        thread_max.acquire()
-        t = threading.Thread(target=get_sub_companys, args=(pid, "三级单位",))
-        threads.append(t)
-        t.start()
-    for j in threads:
-        j.join()
-
-
-# 错误任务复检
-def check_error():
-    for err in errors:
-        thread_max.acquire()
-        t = threading.Thread(target=get_company_info, args=(err[0], err[1], err[2], err[3],))
-        check_threads.append(t)
-        t.start()
-    for j in check_threads:
-        j.join()
-
-
-times = None
-
-
-# @bp.route('/escan_check', methods=('GET', 'POST'))
-# def escan_check():
-#     global times
-#     # 验证码安全验证
-#     ac = request.args.get("action")
-#     if ac == "img":
-#         ts = calendar.timegm(time.gmtime())
-#         times = ts
-#         url = "https://aiqicha.baidu.com/check/getCapImg?t=" + str(times)
-#         resp = s.get(url, headers=headers, timeout=12, verify=False)
-#         return base64.b64encode(resp.content).decode()
-#     elif ac == "sub":
-#         captcha = request.args.get("captcha")
-#         url = "https://aiqicha.baidu.com/check/checkajax"
-#         data = {
-#             "type": "imgcaptcha",
-#             "captcha": captcha,
-#             "time": times,
-#             "fromu": "http://aiqicha.baidu.com"
-#         }
-#         resp = s.post(url, data=data, headers=headers, timeout=12, verify=False)
-#         print(resp.text)
-
 def request_aiqicha(pid):
     get_company_info(pid, "主公司", "100%", "主公司")  # 获取主公司信息
     Two_sub(pid)  # 获取二级单位的信息
-    #Three_sub()  # 获取三级单位的信息
-    #check_error()  # 复检报错的线程任务
-    
-    # #输出错误信息
-    # for err in errors:
-    #     if err[0] in success_company_ids:
-    #         errors.remove(err)
-    #     else:
-    #         with open('error.txt', 'a') as f:
-    #             f.write(str(err) + '\n')
 
 # 企业组织架构查询
 @bp.route('/escan', methods=('GET', 'POST'))
 def escan():
-    # global cookies
-    # cookies = setcookie()
-    # s.headers.update({'Cookie': cookies})
     s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
     s.headers.update({'Connection': 'close'})
     s.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
@@ -377,16 +325,20 @@ def getdomains():
     if not re_dis.exists("domains:" + company):
         p_id=get_root_companyid(company)
         p_name=get_pname(p_id)
-        get_whois(p_name)  # whois反查域名
+
         # ICP反查域名
         for cp in icp_targets:
             get_icp(cp)
         icp_targets.clear()
-        re_dis.set("domains:" + company, json.dumps(domains), ex=3600)
+
+        get_whois(p_name)  # whois反查域名ss
+        re_dis.set("domains:" + company, json.dumps(domains_rs), ex=3600)
+        
         domain_data = json.loads(re_dis.get("domains:" + company))
         res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
     else:
         domain_data = json.loads(re_dis.get("domains:" + company))
         res_data = {"code": 0, "msg": None, "count": len(domain_data), "data": domain_data}
     domains.clear()
+    domains_rs.clear()
     return jsonify(res_data)
