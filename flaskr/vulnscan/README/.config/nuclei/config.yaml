@@ -12,6 +12,7 @@ update-directory: C:\Users\wintrysec\Desktop\DBJ\flaskr\vulnscan/nuclei-template
 # url of the proxy server
 #proxy-url: 
 
+no-color: true
 # custom header.
 #header: []
 

@@ -11,12 +11,11 @@ info:
 
 workflows:
 
-  - template: technologies/springboot-actuator.yaml
+  - template: technologies/detect-springboot-actuator.yaml
     subtemplates:
       - template: misconfiguration/springboot/springboot-configprops.yaml
       - template: misconfiguration/springboot/springboot-env.yaml
       - template: misconfiguration/springboot/springboot-heapdump.yaml
-      - template: misconfiguration/springboot/springboot-httptrace.yaml
       - template: misconfiguration/springboot/springboot-loggers.yaml
       - template: misconfiguration/springboot/springboot-mappings.yaml
       - template: misconfiguration/springboot/springboot-trace.yaml

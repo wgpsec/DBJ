@@ -12,6 +12,7 @@ requests:
       - "{{BaseURL}}/awstats/"
       - "{{BaseURL}}/awstats.conf"
 
+    matchers-condition: and
     matchers:
       - type: word
         words:
@@ -19,8 +20,6 @@ requests:
           - "MAIN SETUP SECTION"
         condition: and
 
-      - type: word
-        words:
-          - "Index of /awstats"
-          - "Parent Directory"
-        condition: and
+      - type: status
+        status:
+          - 200

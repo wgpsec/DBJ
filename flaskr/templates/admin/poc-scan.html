@@ -8,7 +8,7 @@
 
   <form class="layui-form">
   <div class="layui-form-item">
-      <button type="submit" class="layui-btn" lay-submit="" lay-filter="proxy_socks" style="margin-left: 2%;">设置代理</button>
+      <a class="layui-btn" style="margin-left: 2%;"  onclick="xadmin.open('设置代理',`{{ url_for('admin.proxy_set') }}`,450,210)">设置代理</a>
       <button type="submit" class="layui-btn" lay-submit="" lay-filter="scan">开始扫描</button>
   </div>
 

@@ -3,7 +3,6 @@ info:
   name: DVWA Default Login
   author: pdteam
   severity: critical
-  tags: dvwa,default-login
 
 requests:
   - raw:

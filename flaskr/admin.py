@@ -42,6 +42,7 @@ re_dis = redis.Redis(connection_pool=pool)
 
 targets = []  # 所有目标存储用list
 ipc_list = []  # 本次任务所有ip段
+proxy=None      #漏扫代理
 
 cdn_headers = ["x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
 dir_dict=['/admin', '/manager', '/manage', '/member', '/UpLoad', '/containers/json', '/.git/config', '/.svn/entries', '/.DS_Store', '/.hg', '/CVS/Entries', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config', '/config', '/include', '/public', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
@@ -616,17 +617,34 @@ def clear_redis():
 def poc_scan():
     return render_template('admin/poc-scan.html')
 
+#设置代理
+# 修改密码
+@bp.route('/proxy_set', methods=('GET', 'POST'))
+@login_required
+def proxy_set():
+    global proxy
+    if request.method == 'POST':
+        proxy_url = request.form['proxy_url']
+
+        if not proxy_url:
+            proxy=None
+        else:
+            proxy =proxy_url
+
+    return render_template('admin/proxy-set.html')
+
 # 漏扫结果接口
 @bp.route('/get_vulnable', methods=["POST", "GET"])
 def get_vulnable():
     vuln_targets = request.form['vuln_targets']
     app_name=request.form['app_name']
+
     os.chdir('flaskr/vulnscan')
     #写入到urls.txt文件
     with open('urls.txt','w',encoding='utf-8') as f:
         f.write(vuln_targets)
         f.close()
-    vuln.vuln_scan(app_name)
+    vuln.vuln_scan(app_name,proxy)    #开始扫描
     os.chdir('../../')
     os.system('whoami ')
 

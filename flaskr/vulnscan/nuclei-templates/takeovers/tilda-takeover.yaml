@@ -5,20 +5,15 @@ info:
   author: pdcommunity
   severity: high
   tags: takeover
-  reference: https://github.com/EdOverflow/can-i-take-over-xyz/issues/155
+  reference: https://github.com/EdOverflow/can-i-take-over-xyz
 
 requests:
   - method: GET
     path:
       - "{{BaseURL}}"
 
-    matchers-condition: and
     matchers:
       - type: word
         words:
+          - <title>Please renew your subscription</title>
           - Please go to the site settings and put the domain name in the Domain tab.
-
-      - type: word
-        words:
-          - "<title>Please renew your subscription</title>"
-        negative: true

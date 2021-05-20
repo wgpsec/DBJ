@@ -1,9 +1,9 @@
-id: wufoo-takeover
+id: unbounce-takeover
 
 info:
-  name: wufoo takeover detection
+  name: unbounce takeover detection
   author: pdcommunity
-  severity: high
+  severity: info
   tags: takeover
   reference: https://github.com/EdOverflow/can-i-take-over-xyz
 
@@ -13,7 +13,6 @@ requests:
       - "{{BaseURL}}"
 
     matchers:
-      - type: word
-        words:
-          - Profile not found
-          - Hmmm....something is not right.
+      - type: regex
+        regex:
+          - "^The requested URL was not found on this server.$"

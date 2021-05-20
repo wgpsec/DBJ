@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<body>
+        <div class="layui-fluid">
+            <div class="layui-row">
+                <form class="layui-form">
+
+                    <div class="layui-form-item" style="padding-top: 3%;">
+                        <label for="proxy" class="layui-form-label">代理地址</label>
+                        <div class="layui-input-inline">
+                            <input value="" type="text" id="proxy" name="proxy_url" lay-verify="proxy" autocomplete="off" class="layui-input">
+                        </div>
+                        <button class="layui-btn" lay-filter="save" lay-submit="">保存设置</button>
+                    </div>
+                    <label class="layui-form-label">格式示例</label> <p style="margin-top: 6%;color:blue;">socks5://127.0.0.1:1081</p> <p style="margin-top: 2%;">不使用代理直接置空即可</p>
+
+                </form>
+            </div>
+        </div>
+        <script>
+            layui.use(['form', 'layer'],
+            function() {
+                $ = layui.jquery;
+                var form = layui.form,
+                layer = layui.layer;
+
+                //自定义验证规则
+                //form.verify({proxy: [/(.+){5,11}$/, '密码必须5到11位'],});
+
+                //监听提交
+                form.on('submit(save)',function(data) {
+                    //console.log(data);
+                    $.post(data.form.action,data.field);
+                    //发异步
+                    layer.alert("保存成功", {
+                        icon: 6
+                    },
+                    function(save) {
+                        // 获得frame索引
+                        var index = parent.layer.getFrameIndex(window.name);
+                        //关闭当前frame
+                        parent.layer.close(index);
+                    });
+                    return false;
+                });
+
+            });
+        </script>
+    </body>
+{% endblock %}
