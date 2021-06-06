@@ -128,6 +128,19 @@ POC会持续添加上去的.....
 
 ## 安装教程
 
+### Docker 安装模式
+
+```bash
+git clone https://github.com/wgpsec/DBJ.git # 速度太慢可用gitee
+cd DBJ
+docker build . -t dbj
+docker run -d -p 0.0.0.0:65000:5000 dbj # 映射到65000端口上
+```
+访问 http://ip:65000 
+
+### 手动安装
+
+
 一、安装第三方库
 
 推荐使用`Python3.9`以上版本
