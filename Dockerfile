@@ -5,7 +5,7 @@ RUN apt-get update
 RUN apt-get -y install  python3
 RUN apt-get -y install  python3-pip
 RUN apt -y install mongodb
-RUN apt -y install redis
+RUN apt -y install redis-server
 ADD requirements.txt /requirements.txt
 RUN pip3 install -r /requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 ADD . /DBJ/
