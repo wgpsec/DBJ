@@ -14,6 +14,6 @@ RUN pip3 install -r /DBJ/requirements.txt -i https://mirrors.aliyun.com/pypi/sim
 WORKDIR /DBJ/
 ENV LC_ALL=de_DE.utf-8
 ENV LANG=de_DE.utf-8
-RUN chmod +x start.sh
+RUN chmod +x /start.sh
 EXPOSE 5000
 CMD /start.sh
