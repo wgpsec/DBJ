@@ -13,9 +13,19 @@ echo -e "\033[1;36m                 Wgpsec \n\033[0m"
 echo -e "\033[1;32m [help] \033[0m"
 echo -e "\033[1;36m https://github.com/wgpsec/DBJ \n\033[0m"
 echo -e "\033[1;36m Update DBJ ✨\n\033[0m"
-/usr/bin/git -C /DBJ/ pull
-echo -e "\033[1;36m Update DBJ-PY-Tools ✨\n\033[0m"
-/usr/bin/pip3 install -r /DBJ/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+
+git -C /DBJ/ pull
+
+# 对比两个文件是否一致，不一致 则 停止容器等待重启
+if [ "`diff /start.sh /DBJ/start.sh -q`" = "Files /start.sh and /DBJ/start.sh differ" ]
+	echo -e "\033[1;36m Update DBJ Succers ✨\n\033[0m"
+	cp -rf /DBJ/start.sh /start.sh
+	echo -e "\033[1;36m Update DBJ-PY-Tools ✨\n\033[0m"
+	pip3 install -r /DBJ/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+	exit 0
+else
+fi
+
 echo -e "\033[1;36m Start DBJ ✨\n\033[0m"
 
 # [main]
