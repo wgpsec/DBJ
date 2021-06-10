@@ -130,13 +130,27 @@ POC会持续添加上去的.....
 
 ### Docker 安装模式
 
+#### 手动编译
 ```bash
 git clone https://github.com/wgpsec/DBJ.git # 速度太慢可用gitee
 cd DBJ
 docker build . -t dbj
-docker run -d -p 0.0.0.0:65000:5000 dbj # 映射到65000端口上
+docker run -d --name dbj -p 0.0.0.0:65000:5000 dbj # 映射到65000端口上
 ```
+#### 第三方编译⚠️
+```bash
+docker run -it --name dbj -p 5000:5000  xrsec/dbj:latest
+```
+
 访问 http://ip:65000 
+
+#### 查看输出信息
+
+```bash
+docker logs dbj
+```
+
+
 
 ### 手动安装
 
