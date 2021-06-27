@@ -1,0 +1,12 @@
+id: seeyon-oa-workflow
+info:
+  name: Seeyon致远OA
+  author: wintrysec
+  description: 致远OA安全漏洞检查
+  tags: seeyon
+
+workflows:
+  - template: vulnerabilities/seeyon/filedownload.yaml
+  - template: vulnerabilities/seeyon/fastjson-rce.yaml
+  - template: vulnerabilities/seeyon/ajaxupload.yaml
+  - template: vulnerabilities/seeyon/session-rce.yaml

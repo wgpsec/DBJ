@@ -24,8 +24,8 @@ def vuln_scan(app_name,proxy_url):
     app_name=app_name
     if proxy_url is None:
         print("\n无代理,使用直连网络......")
-        command='nuclei -l urls.txt -stats -workflows workflows/{0}-workflow.yaml'.format(app_name)
+        command='nuclei -l urls.txt -stats -workflows workflows/{0}-workflow.yaml -timeout 20'.format(app_name)
     else:
         print("\n代理生效中,",proxy_url)
-        command='nuclei -l urls.txt -stats -workflows workflows/{0}-workflow.yaml -proxy-url {1}'.format(app_name,proxy_url)
+        command='nuclei -l urls.txt -stats -workflows workflows/{0}-workflow.yaml -timeout 20 -proxy-url {1}'.format(app_name,proxy_url)
     sh(command)

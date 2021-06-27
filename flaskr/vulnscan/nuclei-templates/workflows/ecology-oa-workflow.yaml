@@ -1,0 +1,10 @@
+id: ecology-oa-workflow
+info:
+  name: ecology-OA
+  author: wintrysec
+  description: 泛微OA安全漏洞检查
+  tags: ecology
+
+workflows:
+  - template: vulnerabilities/ecology/cnvd-2019-32204.yaml
+  - template: vulnerabilities/ecology/v9upload.yaml
