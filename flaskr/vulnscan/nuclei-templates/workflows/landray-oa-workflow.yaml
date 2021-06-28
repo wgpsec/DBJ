@@ -1,0 +1,9 @@
+id: landray-oa-workflow
+info:
+  name: Landray-OA
+  author: wintrysec
+  description: 蓝凌OA安全检查
+  tags: landray
+
+workflows:
+  - template: vulnerabilities/landray/ssrf-readfile.yaml
