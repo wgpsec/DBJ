@@ -1,0 +1,19 @@
+id: YongYou-Nc(Bsh_RCE)
+
+info:
+  name: YongYou-Nc(Bsh_RCE)
+  author: wintrysec
+  severity: critical
+  description: 用友NC任意命令执行
+  reference: https://github.com/DawnFlame/POChouse
+  tags: YongYou
+
+requests:
+  - method: GET
+    path:
+      - "{{BaseURL}}/servlet/~ic/bsh.servlet.BshServlet"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200

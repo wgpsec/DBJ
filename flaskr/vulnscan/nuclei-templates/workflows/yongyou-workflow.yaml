@@ -1,0 +1,12 @@
+id: yongyou-workflow
+info:
+  name: yongyou
+  author: wintrysec
+  description: 用友软件安全检查
+  tags: yongyou
+
+workflows:
+  - template: vulnerabilities/yongyou/bsh_rce.yaml
+  - template: vulnerabilities/yongyou/erp_directory_traversal.yaml
+  - template: vulnerabilities/yongyou/grp_u8_sqli.yaml
+  - template: vulnerabilities/yongyou/unauth_access.yaml

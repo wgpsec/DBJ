@@ -7,3 +7,4 @@ info:
 
 workflows:
   - template: vulnerabilities/tongda/filedownload.yaml
+  - template: vulnerabilities/tongda/v11_upload.yaml

