@@ -1,0 +1,9 @@
+id: eYou
+info:
+  name: eYou
+  author: wintrysec
+  description: eYou安全漏洞检查
+  tags: eYou
+
+workflows:
+  - template: vulnerabilities/eyou/eyou-rce.yaml

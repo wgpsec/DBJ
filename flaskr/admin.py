@@ -8,7 +8,6 @@ from flaskr.auth import login_required
 from werkzeug.exceptions import abort
 from requests.packages import urllib3
 from flask_pymongo import PyMongo
-from urllib import parse
 import threading
 import requests
 import base64
@@ -16,9 +15,9 @@ import json
 import time
 import os
 import re
-import IPy
 import redis
 import pymmh3
+import dns.resolver #DNS解析
 from .rules import ruleDatas  # 引入Web组件指纹库
 from .vulnscan import vuln
 
@@ -33,25 +32,33 @@ s.keep_alive = False
 # openssl 拒绝短键，防止SSL错误
 urllib3.util.ssl_.DEFAULT_CIPHERS += 'HIGH:!DH:!aNULL'
 
+#HTTP请求-head头
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 12_10) AppleWebKit/600.1.25 (KHTML, like Gecko) Version/12.0 Safari/1200.1.25',
+}
+
 # 设置最大线程数
-thread_max = threading.BoundedSemaphore(value=305)
+thread_max = threading.BoundedSemaphore(value=500)
 thread_max_dir = threading.BoundedSemaphore(value=30)
 
+#Redis缓存数据库连接设置
 pool = redis.ConnectionPool(host='127.0.0.1', port=6379, decode_responses=True, encoding='UTF-8')
 re_dis = redis.Redis(connection_pool=pool)
 
-targets = []  # 所有目标存储用list
-ipc_list = []  # 本次任务所有ip段
+targets = []    # 所有目标存储用list
+ipc_list = []   # 本次任务所有ip-c段
 proxy=None      #漏扫代理
+subdomains_all=[] #所有收集到的子域名，准备拿去做CDN识别
+target_ip_all=[]  #所有目标IP,用于获取IP地理位置和运营商信息
 
-cdn_headers = ["x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
-dir_dict=['/admin', '/manager', '/manage', '/member', '/UpLoad', '/containers/json', '/.git/config', '/.svn/entries', '/.DS_Store', '/.hg', '/CVS/Entries', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/_config', '/config', '/include', '/public', '/login', '/logon', '/manager/login', '/info.php', '/phpinfo.php', '/test.php', '/login.php', '/login.asp', '/login.aspx']
+#CDN Header特征 和 目录扫描的字典（一些登录和源码泄露）
+cdn_headers = ["akamai","x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
+dir_dict=['/admin', '/manager/', '/manage', '/member', '/UpLoad',  '/.git/config/', '/.svn/entries/', '/.DS_Store/', '/.hg', '/CVS/Entries', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/config', '/login', '/logon', '/manager/login']
+dns_dict=[]     #DNS爆破字典
 
 cookies = dict(rememberMe='axxxxxxxxxx123456')
 em = b'NTFlZjc4Y2U1YjY3M2JjMmUyOGQxYzBiNTNiZDU3Y2Y3NjAzYzExMzNhY2U0NWFmZGM1OTQ5Nzkw\nNWNiNTczYg==\n'
 pik = b'NmY5YzQwMWEzOTBkYzM4NTI0YzZiOGRhNWIwNDA3ZDI1OTA3ZmYwMDA4ODBjZDAxNTUyMTIyZjhm\nM2NjYWQ1ZA==\n'
-bp = Blueprint('admin', __name__, url_prefix='/admin')
-
 
 def decrypt(text):
     text = base64.decodebytes(text)
@@ -61,13 +68,14 @@ def decrypt(text):
     plain_text = cryptor.decrypt(a2b_hex(text))
     return bytes.decode(plain_text).rstrip('\0')
 
+bp = Blueprint('admin', __name__, url_prefix='/admin') #蓝图
 
 @bp.route('/')
 @login_required
 def index():
     return render_template('admin/admin.html')
 
-
+#任务列表视图
 @bp.route('/tasklist')
 @login_required
 def tasklist():
@@ -81,46 +89,20 @@ def tasklist():
         all_tasklist = 'None'
     return render_template('admin/tasklist.html', lists=all_tasklist,target_type=target_type)
 
-
-def cdn_check(host, ip, port):
-    app = Flask(__name__)
-    with app.app_context():
-        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
-            host='localhost',
-            port=27017,
-            database='webapp'
-        )
-    mongo = PyMongo(app)
-    s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'})
-    s.headers.update({'Connection': 'close'})
-
-    if host[0:4] == 'http':
-        url = 'https://'+ip+':'+port
-    else:
-        url = 'http://' +ip+':'+port
-    try:
-        resp = s.get(url, timeout=15, verify=False)
-        print('正在检测CDN... ' + host)
-        for cdn_header in cdn_headers:
-            hitCDN = re.findall(cdn_header, str(resp.headers))
-            if hitCDN:
-                mongo.db.subdomains.update({'ip': ip, 'port': port}, {'$set': {'ip': 'CDN'}})
-                print(host + " 此目标存在CDN!!!")
-            else:
-                pass
-    except Exception as ex:
-        mongo.db.subdomains.update({'ip': ip, 'port': port}, {'$set': {'ip': str(ip) + ' 连接超时'}})
-    finally:
-        thread_max.release()
-
-
-eemmail = decrypt(em)
-kkee = decrypt(pik)
+#清空全部redis缓存
+@bp.route('/clear_redis')
+@login_required
+def clear_redis():
+    re_dis.flushall()
+    return redirect(url_for('admin.index'))
 
 
 # 添加任务（包括任务下发）
 @bp.route('/create-task', methods=('GET', 'POST'))
 def create_task():
+    get_dns_dict()  #加载DNS爆破字典
+    subdomains_all.clear()
+    target_ip_all.clear()
     target_type=request.args.get('target_type')
     mongo = PyMongo(current_app)
     threads = []
@@ -135,31 +117,97 @@ def create_task():
         if error is not None:
             flash(error)
         else:
-            create_tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            taskTargets = taskTargets.split('\n')  # 将字符串拆分转成列表
+            create_tm = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())    #任务创建时间
+            taskTargets = taskTargets.split('\n')  # 将字符串拆分转成列表，把扫描目标转成list列表方便单个取出下任务
+            
+            if taskTargets[-1]=='':
+                taskTargets=taskTargets[:-1] #处理下任务时行尾的换行，防止跑出一堆未知资产
+            else:
+                pass
             if target_type =='subdomain':
-                mongo.db.tasks.insert({'title': taskName,'target': taskTargets, 'create': create_tm, 'type': 'subdomain'})
+                mongo.db.tasks.insert({'title': taskName,'target': taskTargets, 'create': create_tm, 'type': 'subdomain'})  #任务列表入库
                 for target in taskTargets:
                     target = target.rstrip(' ')
-                    subs = Subdomain(target)
+                    subs = Subdomain(target)    #开始调用FOFA-API取子域名数据
+                    certs=Subdomain_cert(target)
                     resualt = list(subs.values())
+                    resualt_certs = list(certs.values())
                     data = resualt[4:]  # 数据集的数据部分
+                    data_certs = resualt_certs[4:]  # cert证书取到的IP资产
+
                     for line in data[0]:
                         line.append(taskName)
-                        line.append('-')
+                        line.append('-')    #初始添加Web指纹
                         tmp='DirScan\n'
                         dir_d=tmp.split('\n')
-                        line.append(dir_d)
-                        if (line[4] != 'web') and (line[4] != 'Proxy'):
-                            mongo.db.subdomains.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9],'dirscan': line[10]})
-                            
-                            # 判断CDN
-                            thread_max.acquire()
-                            t = threading.Thread(target=cdn_check, args=(line[0], line[1], line[2],))
-                            threads.append(t)
-                            t.start()
-                            for j in threads:
-                                j.join()
+                        line.append(dir_d) #初始添加Dir目录
+                        line.append('-')   #初始添加解析IP
+
+                        #处理下host格式，转成domain
+                        if line[0][0:5]=='https':
+                            subdomain = str(line[0][8:])
+                        else:
+                            subdomain = str(line[0])
+                        
+                        #将子域名加入列表暂存
+                        if subdomain not in subdomains_all:
+                            subdomain=subdomain.strip()
+                            subdomains_all.append(subdomain)
+
+                        #先将现在的结果存入mongo数据库
+                        if (line[2] != 'web') and (line[2] != 'Proxy'):
+                            mongo.db.subdomains.insert({'host': subdomain, 'web_title': line[1], 'container': line[2],'task_name': line[3], 'tag': line[4],'dirscan': line[5],'ip':line[6],'geo':'-','isp':'-'})
+                        else:
+                            pass
+
+                    #通过cert语法获取IP资产
+                    for line in data_certs[0]:
+                        line.append(taskName)
+                        line.append('-')    #初始添加Web指纹
+                        tmp='DirScan\n'
+                        dir_d=tmp.split('\n')
+                        line.append(dir_d) #初始添加Dir目录
+
+                        #处理下host格式，转成domain
+                        if line[0][0:5]=='https':
+                            subdomain = str(line[0][8:])
+                        else:
+                            subdomain = str(line[0])
+                        
+                        #将子域名加入列表暂存
+                        #将通过CERT取到的IP资产结果存入mongo数据库
+                        if subdomain not in subdomains_all:
+                            subdomain=subdomain.strip()
+                            if ('.com' in subdomain) or ('.cn' in subdomain) or ('.net' in subdomain) or ('www.' in subdomain):
+                                subdomains_all.append(subdomain)
+                                mongo.db.subdomains.insert({'host': subdomain, 'web_title': line[1], 'container': line[2],'ip':line[3],'task_name': line[4], 'tag': line[5],'dirscan': line[6],'geo':'-','isp':'-'})
+                            else:
+                                mongo.db.subdomains.insert({'host': subdomain, 'web_title': line[1], 'container': line[2],'ip':line[3],'task_name': line[4], 'tag': line[5],'dirscan': line[6],'geo':'-','isp':'-'})
+                                #ip加入list
+                                ip = str(line[3]).strip()
+                                if ip not in target_ip_all:
+                                    target_ip_all.append(ip)
+                    
+                    dns_enum(target,taskName)   #调用DNS爆破模块
+
+                #CDN识别（DNS解析,先入库完在开始识别）
+                for dom in subdomains_all:
+                    thread_max.acquire()
+                    t = threading.Thread(target=cdn_check, args=(dom,taskName,))
+                    threads.append(t)
+                    t.start()
+                for j in threads:
+                    j.join()
+                
+                #IP地理位置打标签
+                for ip in target_ip_all:
+                    thread_max.acquire()
+                    t = threading.Thread(target=get_ip_info, args=(ip,taskName,target_type,))
+                    threads.append(t)
+                    t.start()
+                for x in threads:
+                    x.join()
+
                 #开始识别指纹               
                 whatweb(taskName,target_type)
 
@@ -169,7 +217,6 @@ def create_task():
                     target = target.rstrip(' ')
                     webs = Webs(target)
                     resualt = list(webs.values())
-                    #print(resualt[4])
                     data = resualt[4:]  # 数据集的数据部分
                     for line in data[0]:
                         line.append(taskName)
@@ -177,8 +224,26 @@ def create_task():
                         tmp='DirScan\n'
                         dir_d=tmp.split('\n')
                         line.append(dir_d)
+
+                        ip=str(line[3]).strip()
+                        if ip not in target_ip_all:
+                            target_ip_all.append(ip)
+                        
                         if (line[4] != 'web') and (line[4] != 'Proxy'):
-                            mongo.db.webs.insert({'host': line[0], 'ip': line[1], 'port': line[2], 'web_title': line[3],'container': line[4], 'country': line[5], 'province': line[6],'city': line[7], 'task_name': line[8], 'tag': line[9],'dirscan': line[10]})
+                            mongo.db.webs.insert({'host': line[0], 'web_title': line[1],'container': line[2], 'ip':ip, 'task_name': line[4], 'tag': line[5],'dirscan': line[6],'geo':'-','isp':'-'})
+                        else:
+                            pass
+                
+                #IP地理位置打标签
+                for ip in target_ip_all:
+                    thread_max.acquire()
+                    t = threading.Thread(target=get_ip_info, args=(ip,taskName,target_type,))
+                    threads.append(t)
+                    t.start()
+                for x in threads:
+                    x.join()
+                
+                #开始识别指纹 
                 whatweb(taskName,target_type)
                     
     return render_template('admin/create-task.html')
@@ -190,9 +255,11 @@ def create_task():
 def task_del(taskName):
     mongo = PyMongo(current_app)
     t_type =  mongo.db.tasks.find({'title': taskName}, {'type': 1, '_id': 0}).distinct('type')
+    if t_type == 'subdomain':
+        mongo.db.subdomains.remove({'task_name': taskName})
+    else:
+        mongo.db.webs.remove({'task_name': taskName})
     mongo.db.tasks.remove({'title': taskName})
-    mongo.db.webs.remove({'task_name': taskName})
-    mongo.db.subdomains.remove({'task_name': taskName})
 
     return redirect(url_for('admin.tasklist',target_type=t_type))
 
@@ -216,10 +283,192 @@ def subdomain_list(taskName):
             return render_template('admin/subdomain-list.html', lists=lists, tags=tags, taskname=taskName,target_type='subdomain')
     else:
         return render_template('admin/subdomain-list.html')
-    
+
+#从FOFA取子域名数据
+def Subdomain(rootdomain):
+    cmd = 'domain="{dom}"'.format(dom=rootdomain)
+    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
+    fofa_size = "10000"
+    fields = "host,title,server"
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
+    }
+    rs = s.get(api, verify=False, headers=headers,timeout=20)
+    rs_text = rs.text
+    res = json.loads(rs_text)
+    print('[*] 从FOFA获取数据-根域名为: {0}'.format(rootdomain))
+    print(res['results'])
+    error = res['error']
+    if error:
+        errmsg = res['errmsg']
+        if '401 Unauthorized' in errmsg:
+            print('用户名或API 无效！')
+            exit(1)
+    else:
+        return (res)
+
+#根据domain的cert证书从FOFA取IP资产
+def Subdomain_cert(rootdomain):
+    cmd = 'cert="{dom}"'.format(dom=rootdomain)
+    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
+    fofa_size = "10000"
+    fields = "host,title,server,ip"
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
+    }
+    rs = s.get(api, verify=False, headers=headers,timeout=20)
+    rs_text = rs.text
+    res = json.loads(rs_text)
+    print('[*] 从FOFA获IP资产数据-证书根域名为: {0}'.format(rootdomain))
+    print(res['results'])
+    error = res['error']
+    if error:
+        errmsg = res['errmsg']
+        if '401 Unauthorized' in errmsg:
+            print('用户名或API 无效！')
+            exit(1)
+    else:
+        return (res)
+
+#加载DNS字典
+def get_dns_dict():
+    dns_dict.clear()
+    with open('data/dns_dict.txt','r',encoding='utf-8') as f:
+        lines=f.readlines()
+        for line in lines:
+            line=line.strip('\n')
+            dns_dict.append(line)
+
+#DNS爆破任务入口
+def dns_enum(rootdomain,task_name):
+    threads=[]
+    # for domain in dns_dict:
+    #     domain=str(domain).strip('\n')
+    #     domain=domain+'.'+rootdomain
+    #     dns_enum_start(domain,task_name)
+    for domain in dns_dict:
+        thread_max.acquire()
+        domain=str(domain).strip('\n')
+        domain=domain+'.'+rootdomain
+        t = threading.Thread(target=dns_enum_start, args=(domain,task_name,))
+        threads.append(t)
+        t.start()
+    for j in threads:
+        j.join()
+
+#DNS爆破任务实际work
+def dns_enum_start(domain,task_name):
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
+            host='localhost',
+            port=27017,
+            database='webapp'
+        )
+    mongo = PyMongo(app)
+    try:
+        answer = dns.resolver.resolve(domain,'A', raise_on_no_answer=False)
+        if answer.rrset is not None:
+            print('[+] DNS爆破命中：'+domain+"＜（＾－＾）＞")
+            if domain not in subdomains_all:
+                domain=domain.strip()
+                subdomains_all.append(domain)
+                mongo.db.subdomains.insert({'host': domain, 'web_title': '-', 'container': '-','task_name': task_name, 'tag': '-','dirscan': '-','ip':'-','geo':'-','isp':'-'})
+        else:
+            print('[-] DNS爆破无果,子域名不存在 '+domain)
+    except Ellipsis as ex:
+        pass
+        #print("[+] DNS爆破错误: "+str(ex))
+    finally:
+        thread_max.release()
 
 
-# Web资产列表
+#DNS解析识别CDN
+def cdn_check(dom,task_name):
+    dom=str(dom)
+    dom=dom.strip()
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
+            host='localhost',
+            port=27017,
+            database='webapp'
+        )
+    mongo = PyMongo(app)
+
+    try:
+        answer = dns.resolver.resolve(dom,'A', raise_on_no_answer=False)
+        if answer.rrset is not None:
+            dns_cname = str(answer.canonical_name) #这条能输出CNAME的名称
+            dns_cname=dns_cname.strip('.')
+            #dom=dom.strip('.')
+            if dns_cname == dom:
+                dns_rs_A=str(answer.rrset)
+                dns_A = dns_rs_A.split(' ',4)
+                dns_ip=dns_A[4]
+                
+                mongo.db.subdomains.update({'host': dom,'task_name':task_name}, {'$set': {'ip':str(dns_ip)}})
+                print('[+] DNS识别中 '+dom,dns_ip,'A记录')
+
+                ip=dns_ip.strip()
+                if ip not in target_ip_all:
+                    target_ip_all.append(ip)
+                else:
+                    pass
+            else:
+                mongo.db.subdomains.update({'host': dom,'task_name':task_name}, {'$set':{'ip':'CDN'}})
+                print('[+] DNS识别中 '+dom,'CDN')
+        else:
+            print('[+] DNS识别中 '+dom+'DNS解析失败')
+            mongo.db.subdomains.update({'host':dom }, {'$set': {'ip':'DNS解析失败'}})
+
+    except Exception as ex:
+        print('[+] DNS识别中 '+'查询出错: '+str(ex))
+        mongo.db.subdomains.update({'host': dom}, {'$set': {'ip':'DNS解析出错'}})
+    finally:
+        thread_max.release()
+
+#获取IP地理位置
+def get_ip_info(ip,task_name,target_type):
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
+            host='localhost',
+            port=27017,
+            database='webapp'
+        )
+    mongo = PyMongo(app)
+    #淘宝IP地址库接口
+    try:
+        r = s.get('https://ip.taobao.com/outGetIpInfo?ip=%s' %ip)              
+        if  r.json()['code'] == 0 :
+            i = r.json()['data']
+            country = i['country']  #国家
+            region = i['region']    #省份
+            city = i['city']        #城市
+            isp = i['isp']          #运营商
+            geo = country+' '+region+' '+city
+            print(ip)
+            print('地理位置: '+ geo)
+            print('运营商: '+isp+'\n')
+            if target_type == 'subdomain':
+                mongo.db.subdomains.update_many({'ip': ip,'task_name': task_name}, {'$set': {'geo':geo,'isp':isp}}) #update_many 更新多条记录
+            else:
+                mongo.db.webs.update_many({'ip': ip,'task_name': task_name}, {'$set': {'geo':geo,'isp':isp}})
+            
+        elif r.json()['code'] == 4:
+            get_ip_info(ip,task_name,target_type) #API查询限制吞吐量，递归查询多试几次保证IP全查完
+        else:
+            mongo.db.webs.update_many({'ip': ip,'task_name': task_name}, {'$set': {'geo':'查不到','isp':'查不到'}})
+    except Exception as exs:
+        get_ip_info(ip,task_name,target_type)
+        #print('IP地理位置查询异常'+str(exs))
+    finally:
+        thread_max.release()
+
+# Web资产列表（IP资产）
 @bp.route('/<string:taskName>/web-list', methods=('GET', 'POST'))
 @login_required
 def web_list(taskName):
@@ -238,12 +487,125 @@ def web_list(taskName):
             return render_template('admin/web-list.html', lists=lists, tags=tags, taskname=taskName,target_type='web')
     else:
         return render_template('admin/web-list.html')
-# ICON_HASH计算
+
+#从FOFA取IP资产
+def Webs(ipc):
+    #cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="302" || status_code=="301" || status_code=="403" || status_code=="404")'
+    cmd='ip="' + ipc + '"'
+    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
+    fofa_size = "10000"
+    fields = "host,title,server,ip"
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
+        email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
+    }
+    r = requests.get(api, verify=False, headers=headers)
+    rs_text = r.text
+    res = json.loads(rs_text)
+
+    print('\n'+'='*50)
+    print('[*] 从FOFA获取IP资产数据-IP为: {0}'.format(ipc))
+    print('='*50)
+    print(res['results'])
+
+
+    error = res['error']
+    if error:
+        errmsg = res['errmsg']
+        if '401 Unauthorized' in errmsg:
+            print('用户名或API 无效！')
+            exit(1)
+    else:
+        return (res)
+
+# ICON_HASH计算-web页面
+@bp.route('/icohash', methods=["GET", "POST"])
+def icohash():
+    return render_template('admin/icohash.html')
+
+# ICON_HASH数据API接口
+@bp.route('/get_icohash', methods=["POST", "GET"])
+def get_icohash():
+    ico_url = request.form['icourl']
+    if not re_dis.exists("fofa_icon:key:" + str(ico_url)):
+        i_hash = getfaviconhash(ico_url)
+        re_dis.set("fofa_icon:key:" + str(ico_url), i_hash, ex=3600)
+    else:
+        i_hash = re_dis.get("fofa_icon:key:" + str(ico_url))
+    print(ico_url,i_hash)
+        
+    # 判断是否已经查询过（避免短时间重复查询）
+    if not re_dis.exists("fofa_icon:" + str(i_hash)):
+        icon_hash = 'icon_hash="{0}"'.format(str(i_hash))
+        ico_webs = iconhash_search(icon_hash)
+        data_list = []
+        for line in ico_webs['results']:
+            key_list = ['host', 'ip', 'port', 'web_title', 'container', 'country', 'province', 'city']
+            key_data = zip(key_list, line)
+            key_data=dict(key_data)
+            ihash={'i_hash':i_hash}
+            key_data.update(ihash)
+            data_list.append(key_data)
+        re_dis.set("fofa_icon:" + str(i_hash), json.dumps(data_list), ex=3600)
+    icon_data = json.loads(re_dis.get("fofa_icon:" + str(i_hash)))
+
+    res_data = {"code": 0, "msg": None, "count": len(icon_data), "data": icon_data}
+    return jsonify(res_data)
+
+#ICON_HASH格式转换
+def change_format(content):
+    count = len(content) % 76
+    items = re.findall(r".{76}", content)
+    final_item = content[-count:]
+    items.append(final_item)
+    return "{0}\n".format("\n".join(items))
+
+
+# 获取远程 favicon hash信息
+def getfaviconhash(url):
+    try:
+        resp = s.get(url, verify=False)
+        if "image" in resp.headers['Content-Type']:
+            favicon = base64.b64encode(resp.content).decode('utf-8')
+            hash = pymmh3.hash(change_format(favicon))
+        else:
+            hash = None
+        resp.close()
+    except Exception as ex:
+        print("[!] ICON Request Error"+"\n"+str(ex))
+        hash = None
+    return hash
+
+# 根据ICON_HASH 从FOFA匹配资产
+def iconhash_search(icon_hash):
+    cmd = icon_hash
+    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
+    fofa_size = "10000"
+    fields = "host,ip,port,title,server,country,province,city"
+    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
+        email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
+    }
+    r = requests.get(api, verify=False, headers=headers)
+    rs_text = r.text
+    res = json.loads(rs_text)
+    error = res['error']
+    if error:
+        errmsg = res['errmsg']
+        if '401 Unauthorized' in errmsg:
+            print('用户名或API 无效！')
+            exit(1)
+    else:
+        return (res)
+
+# Title关键字Web页面
 @bp.route('/title_k', methods=["GET", "POST"])
 def title_k():
     return render_template('admin/assets-keyword.html')
 
-# 关键字查询资产列表-数据查询接口
+# title关键字查询资产列表-数据查询接口
 @bp.route('/get_keywords', methods=["POST", "GET"])
 def get_keywords():
     keyword = request.form['keyw']
@@ -267,77 +629,9 @@ def get_keywords():
     return jsonify(res_data)
 
 
-def Subdomain(rootdomain):
-    cmd = '(domain="{dom}" || cert="{dom}") &&  (status_code="200" || status_code="403" || status_code="301" || status_code="302") '.format(dom=rootdomain)
-    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
-    fofa_size = "10000"
-    fields = "host,ip,port,title,server,country,province,city"
-    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
-        email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
-    }
-    rs = requests.get(api, verify=False, headers=headers)
-    rs_text = rs.text
-    res = json.loads(rs_text)
-    error = res['error']
-    if error:
-        errmsg = res['errmsg']
-        if '401 Unauthorized' in errmsg:
-            print('用户名或API 无效！')
-            exit(1)
-    else:
-        return (res)
-
-
+#从FOFA取title关键字数据
 def keywords(keywd):
     cmd = 'title="' + keywd + '" && (status_code="200" || status_code=="302" || status_code=="403" || status_code=="301" || status_code=="502" || status_code=="404")'
-    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
-    fofa_size = "10000"
-    fields = "host,ip,port,title,server,country,province,city"
-    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
-        email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
-    }
-    r = requests.get(api, verify=False, headers=headers)
-    rs_text = r.text
-    res = json.loads(rs_text)
-    error = res['error']
-    if error:
-        errmsg = res['errmsg']
-        if '401 Unauthorized' in errmsg:
-            print('用户名或API 无效！')
-            exit(1)
-    else:
-        return (res)
-
-def Webs(ipc):
-    cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="403" || status_code=="301" || status_code=="502" || status_code=="404")'
-    fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
-    fofa_size = "10000"
-    fields = "host,ip,port,title,server,country,province,city"
-    api = "https://fofa.so/api/v1/search/all?email={email}&key={key}&qbase64={query}&size={size}&fields={fields}".format(
-        email=eemmail, key=kkee, query=fofa_query, size=fofa_size, fields=fields)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36'
-    }
-    r = requests.get(api, verify=False, headers=headers)
-    rs_text = r.text
-    res = json.loads(rs_text)
-    error = res['error']
-    if error:
-        errmsg = res['errmsg']
-        if '401 Unauthorized' in errmsg:
-            print('用户名或API 无效！')
-            exit(1)
-    else:
-        return (res)
-
-
-# 根据ICON_HASH FOFA匹配资产
-def iconhash_search(icon_hash):
-    cmd = icon_hash
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size = "10000"
     fields = "host,ip,port,title,server,country,province,city"
@@ -378,29 +672,29 @@ def pass_edit(uid):
 
     return render_template('admin/password-edit.html')
 
-#设置Cookie(百度的BAIDUID),已经起用3
-@bp.route('/cookie-edit', methods=('GET', 'POST'))
-@login_required
-def cookie_edit():
-    old_cookies=''
-    with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
-        lines=f.readlines()
-    for line in lines:
-        old_cookies += line
-    if request.method == 'POST':
-        cookies = request.form['cookies']
-        error = None
+# #设置Cookie(百度的BAIDUID),已经弃用
+# @bp.route('/cookie-edit', methods=('GET', 'POST'))
+# @login_required
+# def cookie_edit():
+#     old_cookies=''
+#     with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
+#         lines=f.readlines()
+#     for line in lines:
+#         old_cookies += line
+#     if request.method == 'POST':
+#         cookies = request.form['cookies']
+#         error = None
 
-        if not cookies:
-            error = 'Cookies不能为空'
+#         if not cookies:
+#             error = 'Cookies不能为空'
 
-        if error is not None:
-            flash(error)
-        else:
-            with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
-                f.write(cookies)
+#         if error is not None:
+#             flash(error)
+#         else:
+#             with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
+#                 f.write(cookies)
 
-    return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
+#     return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
 
 # 导出URL
 @bp.route('/<string:taskName>/export_url', methods=('GET', 'POST'))
@@ -471,59 +765,7 @@ def dirScan(dir_url,target_type,host,taskName):
             mongo = None
             thread_max_dir.release()
 
-# Web指纹识别
-def resWeb(url, host, taskName,target_type):
-    threads_dir=[]
-    app = Flask(__name__)
-    with app.app_context():
-        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
-            host='localhost',
-            port=27017,
-            database='webapp'
-        )
-        try:
-            mongo = PyMongo(app)
-            if target_type=='web':
-                mdb=mongo.db.webs
-            else:
-                mdb=mongo.db.subdomains
-            tags = mdb.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
-            tag=tags['tag'] 
-
-            resp = s.get(url, cookies=cookies, timeout=15, verify=False)
-            resp_err = s.get(url + '/tt', timeout=15, verify=False)  # 请求不存在的页面去让页面报错
-            for cms, finger in ruleDatas.items():
-                hitHeads = re.findall(finger, str(resp.headers))
-                hitBody = re.findall(finger, resp.text)
-                hitBody_err = re.findall(finger, resp_err.text)
-                if hitHeads or hitBody or hitBody_err:
-                    if tag == '-':
-                        print("===========组件信息-{0}：".format(cms) + url)
-                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': cms}})
-                        break
-                else:
-                    pass
-
-            print("--未识别--" + url)
-            resp.close()
-            #目录扫描
-            for dd in dir_dict:
-                dir_url=url+dd
-                thread_max_dir.acquire()
-                t_dir = threading.Thread(target=dirScan, args=(dir_url,target_type,host,taskName,))
-                threads_dir.append(t_dir)
-                t_dir.start()
-            for ddx in threads_dir:
-                ddx.join()
-
-        except Exception as exs:
-            mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
-            print("--连接失败--" + url)
-        finally:
-            mongo.db.client.close()
-            mongo = None
-            thread_max.release()
-
+#指纹识别任务下发
 def whatweb(taskName,tar_type):
     mongo = PyMongo(current_app)
     if tar_type == 'web':
@@ -545,72 +787,74 @@ def whatweb(taskName,tar_type):
     for j in threads:
         j.join()
 
+# Web指纹识别
+def resWeb(url, host, taskName,target_type):
+    threads_dir=[] #目录扫描线程池
+    ico_url=url+'/favicon.ico'
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
+            host='localhost',
+            port=27017,
+            database='webapp'
+        )
+        try:
+            mongo = PyMongo(app)
+            if target_type=='web':
+                mdb=mongo.db.webs
+            else:
+                mdb=mongo.db.subdomains
+            tags = mdb.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
+            tag=tags['tag'] 
 
-# ICON_HASH计算
-@bp.route('/icohash', methods=["GET", "POST"])
-def icohash():
-    return render_template('admin/icohash.html')
+            #Header和Body匹配
+            resp = s.get(url, cookies=cookies, timeout=20, verify=False,headers=headers)
+            resp.close()
+            resp_err = s.get(url + '/tt', timeout=20, verify=False,headers=headers)     # 请求不存在的页面去让页面报错
+            resp_err.close()
 
+            #ICON_HASH匹配
+            ico_hash = getfaviconhash(ico_url)
+            if ico_hash is not None:
+                icon_hash=str(ico_hash)
+            else:
+                icon_hash='12121212'    #肯定不存在的ICON_HASH
 
-# ICON_HASH接口
-@bp.route('/get_icohash', methods=["POST", "GET"])
-def get_icohash():
-    ico_url = request.form['icourl']
-    if not re_dis.exists("fofa_icon:key:" + str(ico_url)):
-        i_hash = getfaviconhash(ico_url)
-        re_dis.set("fofa_icon:key:" + str(ico_url), i_hash, ex=3600)
-    else:
-        i_hash = re_dis.get("fofa_icon:key:" + str(ico_url))
-    print(ico_url,i_hash)
-        
-    # 判断是否已经查询过（避免短时间重复查询）
-    if not re_dis.exists("fofa_icon:" + str(i_hash)):
-        icon_hash = 'icon_hash="{0}"'.format(str(i_hash))
-        ico_webs = iconhash_search(icon_hash)
-        data_list = []
-        for line in ico_webs['results']:
-            key_list = ['host', 'ip', 'port', 'web_title', 'container', 'country', 'province', 'city']
-            key_data = zip(key_list, line)
-            key_data=dict(key_data)
-            ihash={'i_hash':i_hash}
-            key_data.update(ihash)
-            data_list.append(key_data)
-        re_dis.set("fofa_icon:" + str(i_hash), json.dumps(data_list), ex=3600)
-    icon_data = json.loads(re_dis.get("fofa_icon:" + str(i_hash)))
+            for cms, finger in ruleDatas.items():
+                hitHeads = re.findall(finger, str(resp.headers))
+                hitBody = re.findall(finger, resp.text)
+                hitBody_err = re.findall(finger, resp_err.text)
+                hiticon = re.findall(finger,icon_hash)
+                if hitHeads or hitBody or hitBody_err or hiticon:
+                    if tag == '-':
+                        print("[C]-[M]-[S]_[Info] 组件信息-{0}：{1}".format(cms,url) +'\tHead头匹配到 '+str(hitHeads)+'\tBody匹配到 '+str(hitBody)+'\tEorror匹配到 '+str(hitBody_err)+'\tICON匹配到 '+str(hiticon))
+                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': cms}})
+                        break
+                    else:
+                        print("[C]-[M]-[S]_[Info] 组件信息-{0}：{1}".format(cms,url) +'\tHead头匹配到 '+str(hitHeads)+'\tBody匹配到 '+str(hitBody)+'\tEorror匹配到 '+str(hitBody_err)+'\tICON匹配到 '+str(hiticon))
+                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': str(tag)+' '+str(cms)}})
+                        break
+                else:
+                    print("[x] 未识别: " + url)
 
-    res_data = {"code": 0, "msg": None, "count": len(icon_data), "data": icon_data}
-    return jsonify(res_data)
+            
+            #目录扫描
+            # for dd in dir_dict:
+            #     dir_url=url+dd
+            #     thread_max_dir.acquire()
+            #     t_dir = threading.Thread(target=dirScan, args=(dir_url,target_type,host,taskName,))
+            #     threads_dir.append(t_dir)
+            #     t_dir.start()
+            # for ddx in threads_dir:
+            #     ddx.join()
 
-
-def change_format(content):
-    count = len(content) % 76
-    items = re.findall(r".{76}", content)
-    final_item = content[-count:]
-    items.append(final_item)
-    return "{0}\n".format("\n".join(items))
-
-
-# 获取远程 favicon hash信息
-def getfaviconhash(url):
-    try:
-        resp = s.get(url, verify=False)
-        if "image" in resp.headers['Content-Type']:
-            favicon = base64.b64encode(resp.content).decode('utf-8')
-            hash = pymmh3.hash(change_format(favicon))
-        else:
-            hash = None
-        resp.close()
-    except Exception as ex:
-        print("[!] Request Error"+"\n"+str(ex))
-        hash = None
-    return hash
-
-#清空全部redis缓存
-@bp.route('/clear_redis')
-@login_required
-def clear_redis():
-    re_dis.flushall()
-    return redirect(url_for('admin.index'))
+        except Exception as exs:
+            mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
+            print("[x] 连接失败: " + url)
+        finally:
+            mongo.db.client.close()
+            mongo = None
+            thread_max.release()
 
 # POC插件漏扫
 @bp.route('/poc-scan', methods=('GET', 'POST'))
@@ -618,7 +862,6 @@ def poc_scan():
     return render_template('admin/poc-scan.html')
 
 #设置代理
-# 修改密码
 @bp.route('/proxy_set', methods=('GET', 'POST'))
 @login_required
 def proxy_set():
@@ -653,3 +896,7 @@ def get_vulnable():
     res_data = {"code": 0, "msg": None, "count": len(vuln_data), "data": vuln_data}
 
     return jsonify(res_data)
+
+
+eemmail = decrypt(em)
+kkee = decrypt(pik)

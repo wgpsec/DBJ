@@ -44,8 +44,8 @@
                                       <th >Web指纹</th>
                                       <th style="width: 110px;">IP</th>
                                       <th >目录扫描</th>
-                                      <th >省份</th>
-                                      <th >城市</th>
+                                      <th style="width: 95px;">地理位置</th>
+                                      <th >运营商</th>
                                   </tr>
                                 </thead>
                                 {% for list in lists %}
@@ -62,8 +62,8 @@
                                       <td >{{list['tag']}}</td>
                                       <th style="width: 110px;">{{list['ip']}}</th>
                                       <td>{% for dir in list['dirscan']%}<a style="color: blue;" href="{{dir}}" target="_blank">{{dir}}</a><br>{% endfor %}</td>
-                                      <th >{{list['province']}}</th>
-                                      <th >{{list['city']}}</th>
+                                      <th >{{list['geo']}}</th>
+                                      <th >{{list['isp']}}</th>
                                   </tr>
                                 </tbody>
                                 {% endfor %}

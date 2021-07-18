@@ -21,7 +21,7 @@ requests:
         words:
           - "password"
           - "kmss"
-        condition: or
+        condition: and
       - type: status
         status:
           - 200

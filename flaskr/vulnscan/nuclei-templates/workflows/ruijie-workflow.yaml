@@ -1,0 +1,14 @@
+id: ruijie-workflow
+
+info:
+  name: Ruijie Checks
+  author: pikpikcu
+  description: A simple workflow that runs all Ruijie related nuclei templates on a given target.
+
+workflows:
+  - template: vulnerabilities/ruijie/CNVD-2021-17369.yaml
+  - template: vulnerabilities/ruijie/ruijie-networks-lfi.yaml
+  - template: vulnerabilities/ruijie/ruijie-networks-rce.yaml
+  - template: vulnerabilities/ruijie/ruijie-information-disclosure.yaml
+  - template: vulnerabilities/ruijie/CNVD-2020-56167.yaml
+  - template: vulnerabilities/ruijie/ruijie-phpinfo.yaml

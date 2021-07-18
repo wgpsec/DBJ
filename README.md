@@ -4,7 +4,9 @@
 
 ![](https://gitee.com/wintrysec/images/raw/master/banner.jpg)
 
-## 概述-信息收集和资产梳理工具
+## 概述
+
+### 定位：边界资产梳理工具
 
 **项目处于测试阶段，代码会时常更新，各位师傅点个`Star`关注下**
 
@@ -17,11 +19,9 @@
 持久化 MongoDB
 ```
 
-## 功能介绍&使用教程：
-
-**bilibili视频地址（还没录制，哈哈哈）**
-
 ## 功能简介
+
+bilibili视频地址
 
 ### 企业组织架构查询
 
@@ -29,19 +29,7 @@
 
 1、爬虫从爱企查查询企业的组织架构，一级单位、二级单位的首页和邮箱等信息
 
-2、根据企业的公司名称whois反查域名、ICP备案反查域名（这里查到的是根域名）
-
-所有一级单位二级单位都会进行ICP反查
-
-先点查询架构结果出来后再点查询域名，域名结果需要自行去重
-
-3、所有查询到的数据会在后台命令行输出预览
-
-![image-20210310143948010](https://gitee.com/wintrysec/images/raw/master//image-20210310143948010.png)
-
-4、所有查询到的数据会存入redis缓存数据库，并且可导出为CSV
-
-点击右上角admin（用户菜单里的清除缓存），可清空Redis缓存数据（企业架构、ICON_Hash、POC漏扫等模块的结果都会清除）
+2、根据企业的公司名称whois反查域名、ICP备案反查域名，所有一级单位二级单位都会进行ICP反查
 
 
 ### 子域名资产梳理
@@ -53,9 +41,45 @@
 baidu.com
 ```
 
-查询根域名相关的子域名资产
+**子域名查询模块**：
+最终返回的信息是：`主机地址、解析IP、网站标题、Server、应用指纹、目录扫描、地理位置、运营商`
 
-子域名会自动识别CDN，帮助你定位目标真实IP和C段。
+```bash
+主机地址：所有子域名和通过https证书获取IP资产
+解析IP：最终解析出的IP或者CDN的标识
+网站标题：网站的title
+Server：使用的服务器中间件，例如IIS、Apache等Web容器
+应用指纹：网站使用的应用或设备类型，例如Shiro框架、Weblogic中间件、TP开发框架、各种OA系统
+目录扫描：简单的扫描常见的后台和源码泄露（部分WAF会直接拦截）
+地理位置：通过淘宝库查询IP的地理位置和运营商（FOFA返回的地理位置不准确）
+```
+
+**子域名获取流程**：
+
+1、FOFA取数据
+语法：`domain="baidu.com"` ，不过滤请求返回的状态码，尽可能多的获取子域名
+
+获取数据：host、title、server
+
+CERT证书取子域名资产数据（有些直接是真实IP资产，FOFA语法：`cert="baidu.com"`）
+
+获取数据：host、title、server、ip
+
+2、更多子域名获取渠道+最终结果去重
+
+DNS爆破
+
+使用`https://phpinfo.me/domain`的top3000字典，直接多线程调用`dns.resolver`解析域名。测试速度比`ksubdomain`无状态域名爆破工具快一点（原因是DBJ只爆破没做其它域名获取渠道，比如API查询接口这些）
+
+3、CDN识别
+
+解析A记录有CNAME的就是有CDN
+
+cdn_header[host] - 放在指纹识别阶段 二次校验CDN 
+
+4、调用指纹识别模块扫描URL识别Web指纹
+
+
 
 ### IP资产（Web资产）
 
@@ -67,25 +91,11 @@ baidu.com
 111.222.333.444/24
 ```
 
-原理：调用FOFA数据（节约时间和VPS、代理池等资源）
-
 扫描单IP或C段中Web应用，并识别Web指纹
 
 ![image-20210311161144314](https://gitee.com/wintrysec/images/raw/master//image-20210311161144314.png)
 
-此模块的特点：
-
-1、无分页，一拉到底
-
-开着Burp，点一个链接测试一个，不用老去翻页了
-
-2、指纹索引
-
-统计出有哪些指纹命中了，点击相关指纹则下边的资产也只显示与指纹相关的资产
-
-![image-20210311161921828](https://gitee.com/wintrysec/images/raw/master//image-20210311161921828.png)
-
-3、导出URL
+**导出URL**
 
 导出全部URL，或根据指纹索引匹配资产导出URL，然后扔到别的工具或漏扫里边跑
 
@@ -93,24 +103,25 @@ baidu.com
 
 ### Web指纹识别
 
-Web指纹识别时并未发送恶意请求所以无需代理，这样速度还快
+三种识别方式
 
-指纹库在`flaskr->rules.py`，以一个`Dict`的形式存在，python中字典的索引比列表(list)快
+> 1）HTTP-Header 匹配关键字
+>
+> 2）HTTP-Body 匹配关键字
+>
+> 3）ICON_HASH 匹配关键字
 
-收录常见且存在高危漏洞的应用指纹，不断更新中~
+Web指纹识别时并未发送恶意请求所以无需代理。
+
+指纹库在`rules.py`，以一个`Dict`的形式存在，python中字典的索引比列表(list)快
+
+收录常见的应用指纹，不断更新中~
 
 指纹的每个特征用 "|" 分割开来，前后不能有空格
 
 ![image-20210311170057173](https://gitee.com/wintrysec/images/raw/master//image-20210311170057173.png)
 
-**指纹识别的速度配置**
 
-文件位置：`flaskr->admin.py->第34行代码处`
-
-```python
-# 设置最大线程数
-thread_max = threading.BoundedSemaphore(value=305)
-```
 
 ### ICON_HASH计算
 
@@ -124,7 +135,27 @@ thread_max = threading.BoundedSemaphore(value=305)
 
 ![](/data/readme/pocscan.png)
 
-POC会持续添加上去的.....
+POC持续添加中.....（漏扫暂时只支持Windows平台）
+
+**漏扫设置**
+
+nuclei会在当前用户目录下生成一个`.config/nuclei`的配置文件夹；
+
+修改里边两个配置文件
+
+```bash
+#.templates-config.json 模板配置文件
+修改templates-directory的 路径为大宝剑当前的漏扫POC模板路径
+\DBJ\flaskr\vulnscan\nuclei-templates
+
+
+#config.yaml 扫描器配置文件
+update-directory: C:\Users\wintrysec\Desktop\DBJ\flaskr\vulnscan/nuclei-templates
+no-color: true
+concurrency: 50
+rate-limit: 2500
+bulk-size: 50
+```
 
 ## 安装教程
 
@@ -149,8 +180,6 @@ docker run -it --name dbj -p 5000:5000  xrsec/dbj:latest
 ```bash
 docker logs dbj
 ```
-
-
 
 ### 手动安装
 
@@ -190,3 +219,4 @@ sh start.sh
 ```
 
 然后打开浏览器访问 IP:5000 登录即可（默认账户密码admin/admin，进去自己改）
+

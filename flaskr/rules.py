@@ -2,9 +2,11 @@
 ruleDatas = {
 ###中间件
 'Shiro':'(deleteMe)',
-'Weblogic':'(Error 404--Not Found|Hypertext Transfer Protocol -- HTTP/1.1)',
-'Jboss':'(Welcome to JBoss|jboss.css)',
+'Weblogic':'Hypertext Transfer Protocol -- HTTP/1.1',
+'Jboss':'jboss.css ',
 'Tomcat-默认页面':'(/manager/html|/manager/status)',
+'ThinkPHP':'1165838194',
+'Spring框架':'116323821',
 
 ###协同办公OA
 'Tongda-通达OA':'(tongda.ico|onmouseover="this.focus()")',
