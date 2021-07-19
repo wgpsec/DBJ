@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+    web:
+        image: wgpsec/dbj:latest
+        container_name: dbj
+        restart: unless-stopped
+        ports:
+          - "5000:5000"
+        entrypoint: ["/start.sh"]
+        environment:
+          - LANG=en_US.UTF-8
+          - TZ=Asia/Shanghai
