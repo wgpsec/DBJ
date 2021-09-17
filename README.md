@@ -87,6 +87,8 @@ Web指纹识别时并未发送恶意请求所以无需代理。
 
 快！狠！准！
 
+**注意！！！**：**漏扫功能需要在系统设置中填写正确的机器人WebHook地址才能使用，支持钉钉和飞书**
+
 ![](data/readme/image-20210917130248282.png)
 
 ## 安装教程
@@ -99,6 +101,11 @@ git clone https://github.com/wgpsec/DBJ.git # 速度太慢可用gitee
 cd DBJ
 docker build -t dbj_img .							#构建镜像
 docker run -it -d --name dbj -p 5000:5000 dbj_img	#启动容器
+
+#如需重新安装，用以下命令删除容器
+docker rm `docker ps -a -q`
+docker rmi -f dbj_img
+docker network prune -f
 ```
 #### 第三方编译⚠️
 ```bash
