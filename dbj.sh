@@ -11,6 +11,10 @@ echo "\033[1;35m        \//_____/ |__|       \/     \/     \/ \n\033[0m"
 echo "\033[1;32m[help] \033[0m"
 echo "\033[1;36mhttps://github.com/wgpsec/DBJ \n\033[0m"
 echo "\033[1;36mUpdate DBJ-PY \033[0m"
+sed -i "s/username:'admin'/username:'$user'/g" /DBJ/data.js
+sed -i "s/password:'admin'/password:'$pass'/g" /DBJ/data.js
+sed -i "s|https://Your-WebHook|$hook|g" /DBJ/data.js
+
 pip3 install -r /DBJ/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 echo "\033[1;36mStart DBJ \033[0m"
 sh -c "/DBJ/start.sh" 
