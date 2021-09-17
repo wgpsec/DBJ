@@ -1,6 +1,6 @@
 <h1 align="center">DBJ大宝剑 🗡</h1>
 
-![](https://img.shields.io/badge/ReaTeam-%E6%AD%A6%E5%99%A8%E5%BA%93-red)![](https://img.shields.io/badge/license-GPL--3.0-orange)![](https://img.shields.io/badge/version-1.0.1-brightgreen)![](https://img.shields.io/badge/author-wintrysec%20%E6%B8%A9%E9%85%92-blueviolet)![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)
+![](https://img.shields.io/badge/ReaTeam-%E6%AD%A6%E5%99%A8%E5%BA%93-red) ![](https://img.shields.io/badge/license-GPL--3.0-orange) ![](https://img.shields.io/badge/version-1.0.1-brightgreen) ![](https://img.shields.io/badge/author-wintrysec%20%E6%B8%A9%E9%85%92-blueviolet) ![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)
 
 ![](https://gitee.com/wintrysec/images/raw/master/banner.jpg)
 
@@ -95,46 +95,54 @@ Web指纹识别时并未发送恶意请求所以无需代理。
 
 ### Docker 安装模式
 
-#### 手动编译
+##### 手动编译
 ```bash
 git clone https://github.com/wgpsec/DBJ.git # 速度太慢可用gitee
 cd DBJ
 docker build -t dbj_img .							#构建镜像
-docker run -it -d --name dbj -p 5000:5000 dbj_img	#启动容器
+docker run -it -d --name dbj -e "user:admin" -e "pass:admin" -e "hook:http://localhost.com" -p 5000:5000 xrsec/dbj:latest dbj_img	#启动容器
 
 #如需重新安装，用以下命令删除容器
 docker rm `docker ps -a -q`
 docker rmi -f dbj_img
 docker network prune -f
 ```
-#### 第三方编译⚠️
+
+
+##### 推荐使用:smile:
+
 ```bash
-docker run -it --name dbj -p 5000:5000  xrsec/dbj:latest
+docker run -it -d \
+    --name dbj \
+    -e "user:admin" \
+    -e "pass:admin" \
+    -e "hook=http://localhost.com" \
+    -p 5000:5000 \
+    xrsec/dbj:latest
+
+# hook : WebHook
 ```
 
 访问 http://ip:65000 
 
-#### 查看输出信息
+##### 查看输出信息
 
 ```bash
 docker logs dbj
 ```
 
+
+
 ### 手动安装（Centos）
 
-
-一、基础环境安装
+##### 一、基础环境安装
 
 ```bash
+# 备份软件源
 mv /etc/yum.repos.d/CentOS-Linux-BaseOS.repo /etc/yum.repos.d/CentOS-Linux-BaseOS.repo.backup
 curl -o /etc/yum.repos.d/CentOS-Linux-BaseOS.repo https://mirrors.aliyun.com/repo/Centos-8.repo
-yum makecache
-yum -y install yum-utils zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel libffi-devel gcc make \
-curl -O https://www.python.org/ftp/python/3.9.7/Python-3.9.7.tgz && tar xf Python-3.9.7.tgz;cd Python-3.9.7;./configure;make;make install
-echo "alias python='/usr/local/bin/python3.9'" > /etc/profile.d/python.sh && source /etc/profile.d/python.sh \
-curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py -i https://pypi.tuna.tsinghua.edu.cn/simple/
-pip install Flask -i https://mirrors.aliyun.com/pypi/simple/
-yum -y install redis
+
+# 添加mongo软件源
 cat  > /etc/yum.repos.d/mongodb.repo << EOF
 [mngodb-org]
 name=MongoDB Repository
@@ -142,12 +150,24 @@ baseurl=http://mirrors.aliyun.com/mongodb/yum/redhat/7Server/mongodb-org/4.0/x86
 gpgcheck=0
 enabled=1
 EOF
-yum makecache;yum -y install mongodb-org
-pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 
+# 清楚软件缓存并更新软件，可不更新软件 
+yum makecache && yum update -y && yum upgrade -y 
+yum -y install yum-utils zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel libffi-devel gcc make redis mongodb-org ncurses
+
+# 源码编译安装python & pip
+curl -O https://www.python.org/ftp/python/3.9.7/Python-3.9.7.tgz && tar xf Python-3.9.7.tgz && cd Python-3.9.7 && ./configure && make && make install 
+echo "alias python='/usr/local/bin/python3.9'" > /etc/profile.d/python.sh && source /etc/profile.d/python.sh \
+curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py -i https://pypi.tuna.tsinghua.edu.cn/simple/
+
+# 安装python 库
+pip install Flask -i https://mirrors.aliyun.com/pypi/simple/
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 ```
 
-二、创建数据库初始数据
+
+
+##### 二、创建数据库初始数据
 
 ```bash
 #配置MongoDB
@@ -165,7 +185,7 @@ exit
 
 ```
 
-三、启动应用
+##### 三、启动应用
 
 ```bash
 sh start.sh
