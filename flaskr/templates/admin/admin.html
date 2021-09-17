@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container">
     <div class="logo">
-        <a href="#"><img src="{{ url_for('static', filename='images/VulnRange.png') }}" style="height: 25px;width: 25px;margin-right: 4px;">大宝剑</a>
+        <a href="#"><img src="{{ url_for('static', filename='images/wgpsec.png') }}" style="height: 25px;width: 25px;margin-right: 4px;">DBJ-大宝剑</a>
     </div>
 
     <div class="left_open">
@@ -67,17 +67,24 @@
                         </a>
                     </li>
 
-                    <li>
+                    <!-- <li>
                         <a onclick="xadmin.add_tab('资产关键字索引','/admin/title_k')" style="color: aliceblue;">
                             <i class="layui-icon">&#xe609;</i>
                             <cite>资产关键字索引</cite>
                         </a>
-                    </li>
+                    </li> -->
 
                     <li>
                         <a onclick="xadmin.add_tab('POC插件漏扫','/admin/poc-scan')" style="color: aliceblue;">
                             <i class="layui-icon">&#xe679;</i>
                             <cite>POC插件漏扫</cite>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a onclick="xadmin.add_tab('系统设置','/admin/sysconf')" style="color: aliceblue;">
+                            <i class="layui-icon">&#xe609;</i>
+                            <cite>系统设置</cite>
                         </a>
                     </li>
                 </ul>
@@ -102,78 +109,8 @@
                 </div>
                 <div class="layui-tab-content">
                     <div class="layui-tab-item layui-show">
-                        <!-- <iframe src="{{ url_for('admin.tasklist') }}" frameborder="0" scrolling="yes" class="x-iframe"></iframe> -->
-                        <div class="layui-fluid">
-                            <div class="layui-row layui-col-space15">
-                                <div class="layui-col-md12">
-                                    <div class="layui-card">
-                                        <div class="layui-card-body ">
-                                            <blockquote class="layui-elem-quote">
-                                                举杯逸兴壮思飞，欲上青天揽明月
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="layui-col-md12">
-                                    <div class="layui-card">
-                                        <div class="layui-card-header">其他工具</div>
-                                        <div class="layui-card-body ">
-                                            <ul class="layui-row layui-col-space10 layui-this x-admin-carousel x-admin-backlog">
-                                                <li class="layui-col-md2 layui-col-xs6">
-                                                    <a href="https://go.wgpsec.org"  target="_blank" class="x-admin-backlog-body">
-                                                        <h3>精选渗透工具链接导航</h3>
-                                                        <p>
-                                                            <cite style="font-size: medium">渗透资源库</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>  
-                
-                                                <li class="layui-col-md2 layui-col-xs6">
-                                                    <a href="https://wiki.wgpsec.org"  target="_blank" class="x-admin-backlog-body">
-                                                        <h3>WgpSec-wiki</h3>
-                                                        <p>
-                                                            <cite style="font-size: medium">狼组公开知识库</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-
-                                                <li class="layui-col-md2 layui-col-xs6">
-                                                    <a href="https://pan.wgpsec.org"  target="_blank" class="x-admin-backlog-body">
-                                                        <h3>安全工具下载（带宽满速）</h3>
-                                                        <p>
-                                                            <cite style="font-size: medium">狼盘</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                
-                                <div class="layui-col-md12">
-                                    <div class="layui-card">
-                                        <div class="layui-card-header">作者</div>
-                                        <div class="layui-card-body ">
-                                            <table class="layui-table">
-                                                <tbody>
-                                                    <tr>
-                                                        <th>wintrysec</th>
-                                                        <td>
-                                                            <a href="https://github.com/wintrysec" target="_blank">https://github.com/wintrysec</a>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                
-                
-                            </div>
-                        </div>
-                        </div>
-
+                        <iframe src="{{ url_for('admin.show_index') }}" frameborder="0" scrolling="yes" class="x-iframe"></iframe>
+                        
 
                     </div>
                 </div>

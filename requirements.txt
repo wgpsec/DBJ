@@ -15,3 +15,4 @@ redis==3.5.3
 requests==2.25.1
 urllib3==1.26.3
 Werkzeug==1.0.1
+dnspython==2.1.0

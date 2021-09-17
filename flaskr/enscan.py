@@ -262,6 +262,8 @@ def get_sub_companys(pid, level):
 
 
 def Two_sub(pid):
+    Referer = {'Referer':'https://aiqicha.baidu.com/company_detail_99402966917291?tab=basic'}
+    s.headers.update(Referer)
     branch_url = "https://aiqicha.baidu.com/detail/branchajax?p=1&size=100&pid={0}&f=%7b\"openStatus\":\"开业\"%7d".format(
         pid)
     resp_b = s.get(branch_url, verify=False, headers=headers, timeout=8)

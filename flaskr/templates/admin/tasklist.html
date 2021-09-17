@@ -25,7 +25,7 @@
                                   <tr>
                                       <td>{{list['title']}}</td>
                                       <td>{{list['target']}}</td>
-                                      <td>{{list['create']}}</td>
+                                      <td style="width: 130px;">{{list['create']}}</td>
                                       <td class="td-manage">
                                       {% if target_type=='subdomain' %}
                                         <a title="查看子域名资产" onclick="xadmin.add_tab(`{{list['title']}}-子域名`,`{{ url_for('admin.subdomain_list', taskName=list['title']) }}`);javascript:parent.location.reload();">

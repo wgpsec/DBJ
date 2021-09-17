@@ -1,0 +1,12 @@
+# directory storing nuclei-templates
+update-directory: /DBJ/data/nuclei-templates
+no-color: true
+
+# maximum number of templates executed in parallel
+concurrency: 50
+
+# maximum requests to send per second
+rate-limit: 2500
+
+# maximum number of hosts analyzed in parallel per template
+bulk-size: 50

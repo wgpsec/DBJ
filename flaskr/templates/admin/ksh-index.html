@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% block title %}大宝剑数据可视化{% endblock %}
+{% block content %}
+<head>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ksh-index.css') }}">
+  <script type="text/javascript" src="{{ url_for('static', filename='js/echarts.js') }}"></script>
+</head>
+
+<body>
+  <header>
+    <h1 style="color: aqua;">大宝剑数据可视化</h1>
+
+    <li class="fullsc">
+      <a href="#" data-toggle="fullscreen"><i class="layui-icon layui-icon-screen-full" ></i></a>
+    </li>
+    
+    <div class="showTime">当前时间：<span></span></div>
+  </header>
+
+  <section class="mainbox" >
+
+    <div class="column">
+      <div class="panel bar">
+        <h2>任务列表</h2>
+
+        <div class="layui-card-body layui-table-body layui-table-main" style="height: 100%;overflow: scroll;">
+          <table class="layui-table layui-form " lay-skin="nob" style="background:rgba(0,0,0,0);color: turquoise;">
+            <thead>
+              <tr style="background:rgba(0,0,0,0);color: ghostwhite;">
+                <th>任务名称</th>  
+                <th>创建时间</th>
+              </tr>
+            </thead>
+            {% for host in hosts %}
+            <tbody>
+              <tr>
+                <td>{{host['title']}}</td>
+                <td>{{host['create']}}</td>
+              </tr>
+            </tbody>
+            {% endfor %}
+          </table>
+        </div>
+
+        <div class="panel-footer"></div>
+      </div>
+
+      <div class="panel line">
+        <h2>应用汇总</h2>
+
+        <div id="main" style="width: 100%;height:100%;"></div>
+
+        <div class="panel-footer"></div>
+      </div>
+    </div>
+
+    <!-- 中央大屏 开始 -->
+    <div class="column">
+      
+      <div class="no">
+        <div class="no-hd">
+          <ul>
+            <li>{{all_hosts}}</li>
+            <li>{{vuln_num}}</li>
+          </ul>
+        </div>
+        <div class="no-bd">
+          <ul>
+            <li>全部资产</li>
+            <li>漏洞数量</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="map" style="margin-top: -5%;margin-bottom: -10%;">
+        <!-- 转动的地球 -->
+        <!-- <div class="chart"></div> -->
+        <div class="map1"></div>
+        <div class="map2"></div>
+        <div class="map3"></div>
+      </div>
+    </div>
+    <!-- 中央大屏 结束 -->
+
+
+
+    <div class="column">
+
+      <div class="panel bar1">
+        <p style="color:ghostwhite;text-align: center;margin-top: 2%;">漏洞管理<a title="漏洞管理" href="{{ url_for('admin.res_vuln')}}" class="vulnma"><i class="layui-icon">&#xe679;</i></a></p>
+
+        <div class="layui-card-body layui-table-body layui-table-main" style="height: 100%;overflow: scroll;">
+          <table class="layui-table layui-form " lay-skin="nob" style="background:rgba(0,0,0,0);color: turquoise;">
+            <thead>
+              <tr style="background:rgba(0,0,0,0);color: ghostwhite;">
+                  <th>漏洞名称</th>
+                  <th>漏洞地址</th>
+              </tr>
+            </thead>
+            {% for vuln in vulns %}
+            <tbody>
+              <tr style="height: 10px;">
+                <td  style="width: 60%;">{{vuln['vuln_name']}}</td>
+                <td  style="width: 40%;">{{vuln['vuln_url']}}</td>
+              </tr>
+            </tbody>
+            {% endfor %}
+
+          </table>
+        </div>
+
+        <div class="panel-footer"></div>
+      </div>
+
+      <div class="panel line1">
+        <h2>漏洞分类</h2>
+        <div id="vuln" style="width: 100%;height:100%;"></div>
+        <div class="panel-footer"></div>
+      </div>
+
+    </div>
+  </section>
+
+  
+
+  <script>
+    (function (fn) {
+      fn();
+      setInterval(fn, 1000);
+    })(function () {
+     var dt = new Date();
+      document.querySelector(".showTime span").innerHTML =
+        dt.getUTCFullYear()+"年"+(dt.getMonth()+1) + "月" +
+        dt.getDate() + "日-" +
+        dt.getHours() + "时" +
+        dt.getMinutes() + "分" +
+        dt.getSeconds() + "秒";
+    });
+
+
+            
+    //全屏事件 --star
+    $(document).on('click', "[data-toggle='fullscreen']", function () {
+        var doc = document.documentElement;
+        if ($(document.body).hasClass("full-screen")) {
+            $(document.body).removeClass("full-screen");
+            document.exitFullscreen ? document.exitFullscreen() : document.mozCancelFullScreen ? document.mozCancelFullScreen() : document.webkitExitFullscreen && document.webkitExitFullscreen();
+        } else {
+            $(document.body).addClass("full-screen");
+            doc.requestFullscreen ? doc.requestFullscreen() : doc.mozRequestFullScreen ? doc.mozRequestFullScreen() : doc.webkitRequestFullscreen ? doc.webkitRequestFullscreen() : doc.msRequestFullscreen && doc.msRequestFullscreen();
+        }
+    });
+
+  </script>
+
+  <style>
+  tr :hover{background-color: rgba(91, 144, 179, 1);}
+  table { table-layout: fixed;border-collapse:collapse;width: 100%;}
+  td{white-space: nowrap;/*控制单行显示*/overflow: hidden;/*超出隐藏*/text-overflow: ellipsis;/*隐藏的字符用省略号表示*/}
+
+  /* 隐藏滚动条 */
+  div::-webkit-scrollbar { width: 0 !important }
+  div { -ms-overflow-style: none; }
+  div { scrollbar-width: none; }
+  
+
+  .fullsc {margin-top: -2%;padding-left: 2%;}
+  .fullsc i{font-size: 35px; color: aqua;}
+  .fullsc i:hover{font-size: 50px; color: #ff1e69;}
+  .vulnma{color: aqua;margin-left: 3%;}
+  a:hover{color: #ff1e69;}
+  </style>
+
+<!-- 应用-柱形图 -->
+<input id="app_tmp" hidden="true" value="{{apps}}">
+<input id="num_tmp" hidden="true" value="{{apps_num}}">
+<script type="text/javascript">
+  // 基于准备好的dom，初始化echarts实例
+  var chartDom = document.getElementById('main');
+  var myChart = echarts.init(chartDom);//, 'dark'
+
+  var apps =[];
+  var app_tmp = document.getElementById("app_tmp").value;
+  app_tmp = app_tmp.split('aka');
+  for (i=0;i<app_tmp.length;i++){
+    var tmp = app_tmp[i];
+    apps.push(tmp);
+  }
+
+  var apps_num = [];
+  var num_tmp = '{{apps_num}}';
+  num_tmp =num_tmp.split('aka');
+  for (i=0;i<num_tmp.length;i++){
+    var tmp = num_tmp[i];
+    apps_num.push(tmp);
+  }
+  
+
+  // console.log(apps);
+  // console.log(apps_num);
+
+  // 指定图表的配置项和数据
+  option = {
+    title: {
+        text: ''
+    },
+    tooltip: {},
+    // legend: {
+    //     data:['销量']//图示
+    // },
+    xAxis: {
+        data: apps
+    },
+    yAxis: {},
+    series: [{
+        name: '应用指纹',
+        type: 'bar',//柱形图
+        data: apps_num
+    }]
+};
+
+  // 使用刚指定的配置项和数据显示图表。
+  myChart.setOption(option);
+</script>
+
+
+<!-- 漏洞-饼图 -->
+<input id="vuln_datas" hidden="true" value="{{vuln_datas}}">
+
+<script type="text/javascript">
+  // 基于准备好的dom，初始化echarts实例
+  var chartDom = document.getElementById('vuln');
+  var myChart = echarts.init(chartDom);//, 'dark'
+
+  var vuln_s =[];
+  var vuln_tmp = document.getElementById("vuln_datas").value;
+  vuln_tmp = vuln_tmp.split('aka');
+  for (i=0;i<vuln_tmp.length;i++){
+    var tmp = JSON.parse(vuln_tmp[i]);
+    vuln_s.push(tmp);
+  }
+
+ //console.log(vuln_s);
+
+   // 指定图表的配置项和数据
+   option = {
+    tooltip: {
+        trigger: 'item'
+    },
+    series : [
+        {
+            name: '漏洞类别',
+            type: 'pie',
+            radius: '50%',
+            center: ['55%', '40%'],//后边的管高度位置
+            //roseType: 'angle',//南丁格尔图会通过半径表示数据的大小
+            data:vuln_s,
+            label: {
+                color: 'rgba(255, 255, 255, 0.3)'
+            },
+        }
+    ]
+};
+
+  // 使用刚指定的配置项和数据显示图表。
+  myChart.setOption(option);
+</script>
+
+</body>
+{% endblock %}

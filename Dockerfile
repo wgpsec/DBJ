@@ -5,16 +5,22 @@ LABEL Mail="admin@wgpsec.org"
 LABEL Github="https://github.com/wgpsec/DBJ"
 
 ADD . /DBJ/
-ADD start.sh /
 
-RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list
-RUN apt-get update
-RUN apt-get -o Acquire::BrokenProxy="true" -o Acquire::http::No-Cache="true" -o Acquire::http::Pipeline-Depth="0" -y install  python3 python3-pip mongodb redis-server git
-RUN pip3 install -r /DBJ/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list \
+    && apt-get update \
+    && chmod +x /DBJ/start.sh \
+    && apt-get -o Acquire::BrokenProxy="true" -o Acquire::http::No-Cache="true" -o Acquire::http::Pipeline-Depth="0" -y install  python3 python3-pip mongodb redis-server \
+    && pip3 install -r /DBJ/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ \
+    && mkdir -p /root/.config \
+    && cp -r /DBJ/data/.config/nuclei /root/.config/nuclei \
+    && chmod +x /DBJ/data/nuclei \
+    && ln -s /DBJ/data/nuclei /usr/bin/nuclei
 
 WORKDIR /DBJ/
 ENV LC_ALL=de_DE.utf-8
 ENV LANG=de_DE.utf-8
-RUN chmod +x /start.sh
 EXPOSE 5000
-CMD /start.sh
+
+CMD ["mongod","-f", "/etc/mongodb.conf"]
+CMD ["redis-server"]
+CMD ./start.sh

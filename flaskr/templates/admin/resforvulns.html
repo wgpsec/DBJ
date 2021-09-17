@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<body>
+
+        <div class="layui-fluid">
+            <div class="layui-row layui-col-space15">
+                <div class="layui-col-md12">
+                    <div class="layui-card">
+                        <br/>
+                        <div class="layui-card-header">
+                            <li><a class="layui-btn layui-btn-normal" href="#" onClick="javascript :history.back(-1);" style="margin-left: 93%;"> <i class="layui-icon">&#xe65c;</i> 返回</a></li>
+                        </div>
+
+                        <div class="layui-card-body layui-table-body layui-table-main">
+                            <table class="layui-table layui-form">
+                                <thead>
+                                  <tr>
+                                      <th>发现时间</th>
+                                      <th>严重级别</th>
+                                      <th>漏洞名称</th>
+                                      <th>漏洞地址</th>
+                                      <th>操作</th>
+                                  </tr>
+                                </thead>
+                                {% for list in lists %}
+                                <tbody>
+                                  <tr>
+                                      <td style="width: 135px;">{{list['vuln_time']}}</td>
+                                      <td style="width: 80px;">{{list['vuln_level']}}</td>
+                                      <td>{{list['vuln_name']}}</td>
+                                      <td>{{list['vuln_url']}}</td>
+
+                                      <td class="td-manage" style="width: 80px;">
+                                        <a title="漏洞已修复"  href="{{ url_for('admin.vuln_del', host=list['host']) }}">
+                                            <i class="layui-icon" onclick="return confirm('确定漏洞已修复?');">&#x1005;</i>
+                                        </a>
+                                      </td>
+                                  </tr>
+                                </tbody>
+                                {% endfor %}
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+{% endblock %}

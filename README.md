@@ -8,82 +8,42 @@
 
 ### 定位：边界资产梳理工具
 
-**项目处于测试阶段，代码会时常更新，各位师傅点个`Star`关注下**
+大宝剑的寓意：攻防利刃，简化繁琐操作解放双手，一键大保健~
 
-```bash
-技术栈如下
-
-前端   Layui
-服务端 Python-Flask
-缓存   Redis
-持久化 MongoDB
-```
+![](data/readme/image-20210828005319371.png)
 
 ## 功能简介
 
-bilibili视频地址
+bilibili视频地址（不方便拿实际目标演示，取消视频演示）
 
-### 企业组织架构查询
+![](data/readme/image-20210917102812370.png)
 
-![](/data/readme/enscan1.png)
+#### 企业组织架构查询
 
-1、爬虫从爱企查查询企业的组织架构，一级单位、二级单位的首页和邮箱等信息
+1、输入企业关键字，自动查询企业的组织架构（网站首页、邮箱、电话、投资占比）
 
-2、根据企业的公司名称whois反查域名、ICP备案反查域名，所有一级单位二级单位都会进行ICP反查
+2、默认查询一级单位和二级单位，如需查询三级单位，将二级单位关键字输入查询即可
 
+3、一级域名统计，根据所有的一级和二级单位的名称进行Whois和ICP备案查询并统计一级域名
 
-### 子域名资产梳理
+4、查询结果缓存在Redis，可导出为CSV表格
 
-**这块下任务的格式注意下**
+![](data/readme/image-20210828011309673.png)
+
+#### 子域名资产梳理
+
+**任务格式**
 
 ```bash
 #填写一级域名
 baidu.com
 ```
 
-**子域名查询模块**：
-最终返回的信息是：`主机地址、解析IP、网站标题、Server、应用指纹、目录扫描、地理位置、运营商`
+FOFA-API、https证书、DNS爆破等方式获取子域名资产，自动判断CDN。
 
-```bash
-主机地址：所有子域名和通过https证书获取IP资产
-解析IP：最终解析出的IP或者CDN的标识
-网站标题：网站的title
-Server：使用的服务器中间件，例如IIS、Apache等Web容器
-应用指纹：网站使用的应用或设备类型，例如Shiro框架、Weblogic中间件、TP开发框架、各种OA系统
-目录扫描：简单的扫描常见的后台和源码泄露（部分WAF会直接拦截）
-地理位置：通过淘宝库查询IP的地理位置和运营商（FOFA返回的地理位置不准确）
-```
+**边界IP&Web资产梳理**
 
-**子域名获取流程**：
-
-1、FOFA取数据
-语法：`domain="baidu.com"` ，不过滤请求返回的状态码，尽可能多的获取子域名
-
-获取数据：host、title、server
-
-CERT证书取子域名资产数据（有些直接是真实IP资产，FOFA语法：`cert="baidu.com"`）
-
-获取数据：host、title、server、ip
-
-2、更多子域名获取渠道+最终结果去重
-
-DNS爆破
-
-使用`https://phpinfo.me/domain`的top3000字典，直接多线程调用`dns.resolver`解析域名。测试速度比`ksubdomain`无状态域名爆破工具快一点（原因是DBJ只爆破没做其它域名获取渠道，比如API查询接口这些）
-
-3、CDN识别
-
-解析A记录有CNAME的就是有CDN
-
-cdn_header[host] - 放在指纹识别阶段 二次校验CDN 
-
-4、调用指纹识别模块扫描URL识别Web指纹
-
-
-
-### IP资产（Web资产）
-
-**这块下任务的格式注意下**
+**任务格式**
 
 ```bash
 #填写单个IP 或 C段
@@ -101,61 +61,33 @@ cdn_header[host] - 放在指纹识别阶段 二次校验CDN
 
 ![image-20210311161942904](https://gitee.com/wintrysec/images/raw/master//image-20210311161942904.png)
 
-### Web指纹识别
+#### Web指纹识别
 
-三种识别方式
+识别方式
 
 > 1）HTTP-Header 匹配关键字
 >
 > 2）HTTP-Body 匹配关键字
 >
 > 3）ICON_HASH 匹配关键字
+>
+> 4）错误页面 匹配关键字
+>
+> 5）特殊路径匹配
 
 Web指纹识别时并未发送恶意请求所以无需代理。
 
-指纹库在`rules.py`，以一个`Dict`的形式存在，python中字典的索引比列表(list)快
+#### ICON_HASH计算
 
-收录常见的应用指纹，不断更新中~
-
-指纹的每个特征用 "|" 分割开来，前后不能有空格
-
-![image-20210311170057173](https://gitee.com/wintrysec/images/raw/master//image-20210311170057173.png)
-
-
-
-### ICON_HASH计算
-
-计算图标的哈希值，并自动匹配相关资产（适合瞄准目标时用）
+计算图标的哈希值，并自动匹配相关资产
 
 ![image-20210311164827806](https://gitee.com/wintrysec/images/raw/master//image-20210311164827806.png)
 
-### POC插件漏扫
+#### POC插件漏扫
 
-漏扫调用的`nuclei`，因为这个漏扫速度快性能好，各位可自行和市面上的相关工具产品对比下
+快！狠！准！
 
-![](/data/readme/pocscan.png)
-
-POC持续添加中.....（漏扫暂时只支持Windows平台）
-
-**漏扫设置**
-
-nuclei会在当前用户目录下生成一个`.config/nuclei`的配置文件夹；
-
-修改里边两个配置文件
-
-```bash
-#.templates-config.json 模板配置文件
-修改templates-directory的 路径为大宝剑当前的漏扫POC模板路径
-\DBJ\flaskr\vulnscan\nuclei-templates
-
-
-#config.yaml 扫描器配置文件
-update-directory: C:\Users\wintrysec\Desktop\DBJ\flaskr\vulnscan/nuclei-templates
-no-color: true
-concurrency: 50
-rate-limit: 2500
-bulk-size: 50
-```
+![](data/readme/image-20210917130248282.png)
 
 ## 安装教程
 
@@ -165,8 +97,8 @@ bulk-size: 50
 ```bash
 git clone https://github.com/wgpsec/DBJ.git # 速度太慢可用gitee
 cd DBJ
-docker build . -t dbj
-docker run -d --name dbj -p 0.0.0.0:65000:5000 dbj # 映射到65000端口上
+docker build -t dbj_img .							#构建镜像
+docker run -it -d --name dbj -p 5000:5000 dbj_img	#启动容器
 ```
 #### 第三方编译⚠️
 ```bash
@@ -181,20 +113,34 @@ docker run -it --name dbj -p 5000:5000  xrsec/dbj:latest
 docker logs dbj
 ```
 
-### 手动安装
+### 手动安装（Centos）
 
 
-一、安装第三方库
-
-推荐使用`Python3.9`以上版本
+一、基础环境安装
 
 ```bash
-pip install -r requirements.txt
+mv /etc/yum.repos.d/CentOS-Linux-BaseOS.repo /etc/yum.repos.d/CentOS-Linux-BaseOS.repo.backup
+curl -o /etc/yum.repos.d/CentOS-Linux-BaseOS.repo https://mirrors.aliyun.com/repo/Centos-8.repo
+yum makecache
+yum -y install yum-utils zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel libffi-devel gcc make \
+curl -O https://www.python.org/ftp/python/3.9.7/Python-3.9.7.tgz && tar xf Python-3.9.7.tgz;cd Python-3.9.7;./configure;make;make install
+echo "alias python='/usr/local/bin/python3.9'" > /etc/profile.d/python.sh && source /etc/profile.d/python.sh \
+curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py -i https://pypi.tuna.tsinghua.edu.cn/simple/
+pip install Flask -i https://mirrors.aliyun.com/pypi/simple/
+yum -y install redis
+cat  > /etc/yum.repos.d/mongodb.repo << EOF
+[mngodb-org]
+name=MongoDB Repository
+baseurl=http://mirrors.aliyun.com/mongodb/yum/redhat/7Server/mongodb-org/4.0/x86_64/
+gpgcheck=0
+enabled=1
+EOF
+yum makecache;yum -y install mongodb-org
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+
 ```
 
-二、安装配置数据库
-
-> 先安装MonGoDB和Redis
+二、创建数据库初始数据
 
 ```bash
 #配置MongoDB
@@ -203,18 +149,18 @@ use webapp
 db.createCollection("tasks")
 db.createCollection("webs")
 db.createCollection("subdomains")
+db.createCollection("vulns")
 db.createCollection("user")
+db.createCollection("http_hook")
 db.user.insert({uid:1,username:'admin',password:'admin'})
+db.http_hook.insert({'hook':'https://Your-WebHook'})
 exit
+
 ```
 
 三、启动应用
 
 ```bash
-#Windows系统 
-点击start.bat
-
-#Linux系统
 sh start.sh
 ```
 

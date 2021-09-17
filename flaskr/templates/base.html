@@ -7,17 +7,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/xadmin.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='lib/layui/css/layui.css') }}">
+    
     <script type="text/javascript" src="{{ url_for('static', filename='lib/layui/layui.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/xadmin.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.10.2.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/flexible.js') }}"></script>
 </head>
 
 
 
 <section class="content">
-  <header>
+  <!-- <header>
     {% block header %}{% endblock %}
-  </header>
+  </header> -->
 
   {% for message in get_flashed_messages() %}
     <div class="flash"><h2 style="color: red;text-align: center;">{{ message }}</h2></div>

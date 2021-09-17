@@ -53,7 +53,7 @@ target_ip_all=[]  #所有目标IP,用于获取IP地理位置和运营商信息
 
 #CDN Header特征 和 目录扫描的字典（一些登录和源码泄露）
 cdn_headers = ["akamai","x-cdn","x-cdn-forward","x-ser","x-cf1","x-cache","x-cached","x-cacheable","x-hit-cache","x-cache-status","x-cache-hits","x-cache-lookup","cc_cache","webcache","chinacache","x-req-id","x-requestid","cf-request-id","x-github-request-id","x-sucuri-id","x-amz-cf-id","x-airee-node","x-cdn-provider","x-fastly","x-iinfo","x-llid","sozu-id","x-cf-tsc","x-ws-request-id","fss-cache","powered-by-chinacache","verycdn","yunjiasu","skyparkcdn","x-beluga-cache-status","x-content-type-options","x-download-options","x-proxy-node","access-control-max-age","expires","cache-control",]
-dir_dict=['/admin', '/manager/', '/manage', '/member', '/UpLoad',  '/.git/config/', '/.svn/entries/', '/.DS_Store/', '/.hg', '/CVS/Entries', '/WEB-INF/web.xml', '/WEB-INF/database.properties', '/WEB-INF/classes/database.properties', '/config', '/login', '/logon', '/manager/login']
+dir_dict=['/admin', '/manager/', '/manage', '/member', '/UpLoad', '/config', '/login', '/manager/login']
 dns_dict=[]     #DNS爆破字典
 
 cookies = dict(rememberMe='axxxxxxxxxx123456')
@@ -70,10 +70,67 @@ def decrypt(text):
 
 bp = Blueprint('admin', __name__, url_prefix='/admin') #蓝图
 
+#首页视图
 @bp.route('/')
 @login_required
 def index():
     return render_template('admin/admin.html')
+
+#可视化大屏视图
+@bp.route('/show_index')
+@login_required
+def show_index():
+    apps = ''
+    app_list=[]
+    apps_num ='' #应用和应用的数量一一对应的列表
+    #设置数据库连接参数
+    app = Flask(__name__)
+    with app.app_context():
+        app.config['MONGO_URI'] = "mongodb://{host}:{port}/{database}".format(
+        host='localhost',
+        port=27017,
+        database='webapp'
+        )
+    mongo = PyMongo(app)
+    mdb=mongo.db.vulns
+    vuln_num = mdb.find().count()   #漏洞总数
+    new_host_num = mongo.db.new_hosts.find().count()    #新增资产总数
+    all_hosts = (mongo.db.webs.find().count())+(mongo.db.subdomains.find().count())
+    hosts = mongo.db.tasks.find()   #新增的资产数据->改为所有任务列表
+    vulns =  mongo.db.vulns.find()      #所有漏洞数据
+
+    tags = mongo.db.webs.find().distinct('tag') #所有应用指纹列表
+    for tag in tags:
+        tag = str(tag).strip()
+        if tag == "-":
+            tag="未知应用"
+        else:
+            pass
+        if tag not in apps:
+            app_list.append(tag)
+            apps += tag+"aka"
+    apps = apps.strip("aka")
+    for app in app_list:
+        if app == "未知应用":
+            app="-"
+        num_tmp = mongo.db.webs.find({'tag':app}).count()
+        num_tmp =str(num_tmp).strip()
+        apps_num += num_tmp+"aka"
+    apps_num =apps_num.strip("aka")
+
+    vuln_data = []
+    vuln_datas =''
+    vulns_name =  mongo.db.vulns.find().distinct('vuln_name')      #所有漏洞数据,列出漏洞分类
+    for vuln_name in vulns_name:
+        if vulns_name not in vuln_data:
+            vuln_data.append(vuln_name)
+    for vuln_name in vuln_data:
+        count_num = mongo.db.vulns.find({'vuln_name':vuln_name}).count()    #统计某类漏洞数量
+        msg = '{{"value":{0},"name":"{1}"}}aka'.format(count_num,vuln_name)
+        vuln_datas += msg.strip()
+    vuln_datas = vuln_datas.strip("aka")
+
+    return render_template('admin/ksh-index.html',vuln_num=vuln_num,new_host_num=new_host_num,hosts=hosts,all_hosts =all_hosts, vulns=vulns,apps=apps,apps_num=apps_num,vuln_datas=vuln_datas)
 
 #任务列表视图
 @bp.route('/tasklist')
@@ -127,7 +184,8 @@ def create_task():
             if target_type =='subdomain':
                 mongo.db.tasks.insert({'title': taskName,'target': taskTargets, 'create': create_tm, 'type': 'subdomain'})  #任务列表入库
                 for target in taskTargets:
-                    target = target.rstrip(' ')
+                    target=str(target).strip()
+                    target = target.strip(' ')
                     subs = Subdomain(target)    #开始调用FOFA-API取子域名数据
                     certs=Subdomain_cert(target)
                     resualt = list(subs.values())
@@ -171,6 +229,8 @@ def create_task():
                         #处理下host格式，转成domain
                         if line[0][0:5]=='https':
                             subdomain = str(line[0][8:])
+                        elif line[0][0:4]=='http':
+                            subdomain = str(line[0][7:])
                         else:
                             subdomain = str(line[0])
                         
@@ -263,6 +323,14 @@ def task_del(taskName):
 
     return redirect(url_for('admin.tasklist',target_type=t_type))
 
+# 删除漏洞
+@bp.route('/<string:host>/vuln_del', methods=('GET', 'POST'))
+@login_required
+def vuln_del(host):
+    mongo = PyMongo(current_app)
+    mongo.db.vulns.remove({'host': host})
+
+    return redirect(url_for('admin.res_vuln'))
 
 # 子域名列表
 @bp.route('/<string:taskName>/subdomain-list', methods=('GET', 'POST'))
@@ -344,10 +412,6 @@ def get_dns_dict():
 #DNS爆破任务入口
 def dns_enum(rootdomain,task_name):
     threads=[]
-    # for domain in dns_dict:
-    #     domain=str(domain).strip('\n')
-    #     domain=domain+'.'+rootdomain
-    #     dns_enum_start(domain,task_name)
     for domain in dns_dict:
         thread_max.acquire()
         domain=str(domain).strip('\n')
@@ -379,9 +443,9 @@ def dns_enum_start(domain,task_name):
         else:
             print('[-] DNS爆破无果,子域名不存在 '+domain)
     except Ellipsis as ex:
-        pass
-        #print("[+] DNS爆破错误: "+str(ex))
+        print("[+] 子域名不存在\t"+domain)
     finally:
+        mongo = None
         thread_max.release()
 
 
@@ -410,7 +474,7 @@ def cdn_check(dom,task_name):
                 dns_ip=dns_A[4]
                 
                 mongo.db.subdomains.update({'host': dom,'task_name':task_name}, {'$set': {'ip':str(dns_ip)}})
-                print('[+] DNS识别中 '+dom,dns_ip,'A记录')
+                print('[+] CDN识别中 '+dom,dns_ip,'A记录')
 
                 ip=dns_ip.strip()
                 if ip not in target_ip_all:
@@ -419,9 +483,9 @@ def cdn_check(dom,task_name):
                     pass
             else:
                 mongo.db.subdomains.update({'host': dom,'task_name':task_name}, {'$set':{'ip':'CDN'}})
-                print('[+] DNS识别中 '+dom,'CDN')
+                print('[+] CDN识别中 '+dom,'CDN')
         else:
-            print('[+] DNS识别中 '+dom+'DNS解析失败')
+            print('[+] CDN识别中 '+dom+'DNS解析失败')
             mongo.db.subdomains.update({'host':dom }, {'$set': {'ip':'DNS解析失败'}})
 
     except Exception as ex:
@@ -450,9 +514,9 @@ def get_ip_info(ip,task_name,target_type):
             city = i['city']        #城市
             isp = i['isp']          #运营商
             geo = country+' '+region+' '+city
-            print(ip)
-            print('地理位置: '+ geo)
-            print('运营商: '+isp+'\n')
+            # print(ip)
+            # print('地理位置: '+ geo)
+            # print('运营商: '+isp+'\n')
             if target_type == 'subdomain':
                 mongo.db.subdomains.update_many({'ip': ip,'task_name': task_name}, {'$set': {'geo':geo,'isp':isp}}) #update_many 更新多条记录
             else:
@@ -463,10 +527,20 @@ def get_ip_info(ip,task_name,target_type):
         else:
             mongo.db.webs.update_many({'ip': ip,'task_name': task_name}, {'$set': {'geo':'查不到','isp':'查不到'}})
     except Exception as exs:
-        get_ip_info(ip,task_name,target_type)
-        #print('IP地理位置查询异常'+str(exs))
+        geo_status = mongo.db.tasks.find({'ip': ip,'task_name': task_name}, {'geo': 1, '_id': 0}).distinct('geo')
+        # print(geo_status)
+        if geo_status == "查询异常":
+            get_ip_info(ip,task_name,target_type)
+        elif geo_status =='-':
+            mongo.db.webs.update_many({'ip': ip,'task_name': task_name}, {'$set': {'geo':'查询异常','isp':'查询异常'}})
+        else:
+            pass
+
     finally:
+        mongo.db.client.close()
+        mongo = None
         thread_max.release()
+
 
 # Web资产列表（IP资产）
 @bp.route('/<string:taskName>/web-list', methods=('GET', 'POST'))
@@ -490,8 +564,8 @@ def web_list(taskName):
 
 #从FOFA取IP资产
 def Webs(ipc):
-    #cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="302" || status_code=="301" || status_code=="403" || status_code=="404")'
-    cmd='ip="' + ipc + '"'
+    cmd = 'ip="' + ipc + '" && (status_code="200" || status_code=="302" || status_code=="302" || status_code=="301" || status_code=="403" || status_code=="404")'
+    #cmd='ip="' + ipc + '"'
     fofa_query = base64.b64encode(cmd.encode('utf-8')).decode("utf-8")
     fofa_size = "10000"
     fields = "host,title,server,ip"
@@ -672,29 +746,6 @@ def pass_edit(uid):
 
     return render_template('admin/password-edit.html')
 
-# #设置Cookie(百度的BAIDUID),已经弃用
-# @bp.route('/cookie-edit', methods=('GET', 'POST'))
-# @login_required
-# def cookie_edit():
-#     old_cookies=''
-#     with open('./baidu_cookie.txt','r',encoding='utf-8') as f:
-#         lines=f.readlines()
-#     for line in lines:
-#         old_cookies += line
-#     if request.method == 'POST':
-#         cookies = request.form['cookies']
-#         error = None
-
-#         if not cookies:
-#             error = 'Cookies不能为空'
-
-#         if error is not None:
-#             flash(error)
-#         else:
-#             with open('./baidu_cookie.txt','w',encoding='utf-8')as f:
-#                 f.write(cookies)
-
-#     return render_template('admin/cookie-edit.html',old_cookies=old_cookies)
 
 # 导出URL
 @bp.route('/<string:taskName>/export_url', methods=('GET', 'POST'))
@@ -740,7 +791,7 @@ def dirScan(dir_url,target_type,host,taskName):
             resp_dir.close()
             dir_status = resp_dir.status_code
             if (dir_status == 200 or dir_status == 301 or dir_status == 302):
-                print(dir_url + '   命中目录, 请验证！！！')
+                # print(dir_url + '   命中目录, 请验证！！！')
                 old_dir=mdbd.find_one({'host': host, 'task_name': taskName},{'dirscan': 1, '_id': 0})
                 if old_dir['dirscan'][0]=='DirScan':
                     tmp=dir_url+'\n'
@@ -751,7 +802,7 @@ def dirScan(dir_url,target_type,host,taskName):
                     mdbd.update({'host': host, 'task_name': taskName}, {'$set': {'dirscan': bad_dir}})
                 else:
                     if old_dir['dirscan'][0]=='-':
-                        print(dir_url+" 属于误报XXX")
+                        # print(dir_url+" 属于误报XXX")
                         pass
                     else:
                         old_dir['dirscan'].append(dir_url)
@@ -781,14 +832,14 @@ def whatweb(taskName,tar_type):
             host = hs['host']
             url = "http://" + hs['host']
         thread_max.acquire()
-        t = threading.Thread(target=resWeb, args=(url, host, taskName,tar_type,))
+        t = threading.Thread(target=resqweb, args=(url, host, taskName,tar_type,))
         threads.append(t)
         t.start()
     for j in threads:
         j.join()
 
 # Web指纹识别
-def resWeb(url, host, taskName,target_type):
+def resqweb(url, host, taskName,target_type):
     threads_dir=[] #目录扫描线程池
     ico_url=url+'/favicon.ico'
     app = Flask(__name__)
@@ -804,6 +855,7 @@ def resWeb(url, host, taskName,target_type):
                 mdb=mongo.db.webs
             else:
                 mdb=mongo.db.subdomains
+
             tags = mdb.find_one({'task_name': taskName, 'host': host}, {'tag': 1, '_id': 0})
             tag=tags['tag'] 
 
@@ -820,37 +872,41 @@ def resWeb(url, host, taskName,target_type):
             else:
                 icon_hash='12121212'    #肯定不存在的ICON_HASH
 
-            for cms, finger in ruleDatas.items():
+            for app_name, app_info in ruleDatas.items():
+                finger = app_info['finger']
                 hitHeads = re.findall(finger, str(resp.headers))
-                hitBody = re.findall(finger, resp.text)
+                hitBody = re.findall(finger, str(resp.text))
                 hitBody_err = re.findall(finger, resp_err.text)
                 hiticon = re.findall(finger,icon_hash)
+
                 if hitHeads or hitBody or hitBody_err or hiticon:
-                    if tag == '-':
-                        print("[C]-[M]-[S]_[Info] 组件信息-{0}：{1}".format(cms,url) +'\tHead头匹配到 '+str(hitHeads)+'\tBody匹配到 '+str(hitBody)+'\tEorror匹配到 '+str(hitBody_err)+'\tICON匹配到 '+str(hiticon))
-                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': cms}})
+                    if tag == "-":
+                        print("[CMS组件信息]-{0}：{1}".format(app_name,url) +'\tHead头匹配到 '+str(hitHeads)+'\tBody匹配到 '+str(hitBody)+'\tEorror匹配到 '+str(hitBody_err)+'\tICON匹配到 '+str(hiticon))
+                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': app_name}})
+                        break
+                    elif app_name.lower() not in str(tag).lower():
+                        print("[CMS组件信息]-{0}：{1}".format(app_name,url) +'\tHead头匹配到 '+str(hitHeads)+'\tBody匹配到 '+str(hitBody)+'\tEorror匹配到 '+str(hitBody_err)+'\tICON匹配到 '+str(hiticon))
+                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': str(tag)+','+str(app_name)}})
                         break
                     else:
-                        print("[C]-[M]-[S]_[Info] 组件信息-{0}：{1}".format(cms,url) +'\tHead头匹配到 '+str(hitHeads)+'\tBody匹配到 '+str(hitBody)+'\tEorror匹配到 '+str(hitBody_err)+'\tICON匹配到 '+str(hiticon))
-                        mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': str(tag)+' '+str(cms)}})
-                        break
+                        pass
                 else:
-                    print("[x] 未识别: " + url)
-
+                    pass    #不能改
+            #print("[x] 未识别: " + url)
             
             #目录扫描
-            # for dd in dir_dict:
-            #     dir_url=url+dd
-            #     thread_max_dir.acquire()
-            #     t_dir = threading.Thread(target=dirScan, args=(dir_url,target_type,host,taskName,))
-            #     threads_dir.append(t_dir)
-            #     t_dir.start()
-            # for ddx in threads_dir:
-            #     ddx.join()
+            for dd in dir_dict:
+                dir_url=url+dd
+                thread_max_dir.acquire()
+                t_dir = threading.Thread(target=dirScan, args=(dir_url,target_type,host,taskName,))
+                threads_dir.append(t_dir)
+                t_dir.start()
+            for ddx in threads_dir:
+                ddx.join()
 
         except Exception as exs:
             mdb.update({'host': host, 'task_name': taskName}, {'$set': {'tag': '连接失败'}})  
-            print("[x] 连接失败: " + url)
+            # print("[x] 连接失败: " + url)
         finally:
             mongo.db.client.close()
             mongo = None
@@ -858,8 +914,25 @@ def resWeb(url, host, taskName,target_type):
 
 # POC插件漏扫
 @bp.route('/poc-scan', methods=('GET', 'POST'))
+@login_required
 def poc_scan():
-    return render_template('admin/poc-scan.html')
+    poc_list =''
+    for app_name, app_info in ruleDatas.items():
+        cms = app_info['value']
+        msg = '{{"value":"{0}","title":"{1}"}}aka'.format(cms,app_name)
+        poc_list += msg.strip()
+    poc_list = poc_list.strip("aka")
+
+    return render_template('admin/poc-scan.html',poc_list=poc_list)
+
+# 漏洞统计
+@bp.route('/resforvulns', methods=('GET', 'POST'))
+@login_required
+def res_vuln():
+    mongo = PyMongo(current_app)
+    mdb=mongo.db.vulns
+    lists = mdb.find()
+    return render_template('admin/resforvulns.html',lists=lists)
 
 #设置代理
 @bp.route('/proxy_set', methods=('GET', 'POST'))
@@ -876,20 +949,26 @@ def proxy_set():
 
     return render_template('admin/proxy-set.html')
 
+# 漏扫调用
+def poc_scan(app_name,proxy,url):
+    vuln.vuln_scan(app_name,proxy,url)
+
 # 漏扫结果接口
 @bp.route('/get_vulnable', methods=["POST", "GET"])
+@login_required
 def get_vulnable():
     vuln_targets = request.form['vuln_targets']
     app_name=request.form['app_name']
+    app_name = str(app_name).split("undefined",1)[1].strip(",")
+    app_name = app_name.split(",", 1)[0]
+    #print(app_name) #转成以逗号分隔的字符串
 
-    os.chdir('flaskr/vulnscan')
     #写入到urls.txt文件
-    with open('urls.txt','w',encoding='utf-8') as f:
+    with open('flaskr/vulnscan/urls.txt','w',encoding='utf-8') as f:
         f.write(vuln_targets)
         f.close()
-    vuln.vuln_scan(app_name,proxy)    #开始扫描
-    os.chdir('../../')
-    os.system('whoami ')
+    url=None
+    poc_scan(app_name,proxy,None)    #开始扫描
 
     re_dis.set("vulns", json.dumps(vuln.vuln_list), ex=3600)
     vuln_data = json.loads(re_dis.get("vulns"))
@@ -897,6 +976,24 @@ def get_vulnable():
 
     return jsonify(res_data)
 
+# 系统设置
+@bp.route('/sysconf', methods=('GET', 'POST'))
+@login_required
+def sysconf():
+    mongo = PyMongo(current_app)
+    hookdb=mongo.db.http_hook
+
+    old_hook = hookdb.find()
+    old_hook = old_hook[0]['hook']
+
+    if request.method == 'POST':
+        new_hook = request.form['dd_hook']
+        hookdb.update({'hook':old_hook},{'$set':{'hook':new_hook}})
+    else:
+        pass
+    hook = hookdb.find()
+    hook = hook[0]['hook']
+    return render_template('admin/sysconf.html',hook=hook)
 
 eemmail = decrypt(em)
 kkee = decrypt(pik)

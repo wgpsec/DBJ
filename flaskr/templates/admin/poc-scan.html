@@ -22,7 +22,8 @@
   </fieldset>
   
   <div id="poc_scan" class="demo-transfer" style="margin-left: 2%;"></div>
-  
+  <input id="poclist" value="{{poc_list}}" hidden="true">
+
 
   <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
     <legend>扫描结果</legend>
@@ -35,24 +36,23 @@ layui.use(['transfer','table'], function(){
   var table = layui.table;
   var form = layui.form;
   var layer = layui.layer;
+  var pocs = document.getElementById("poclist").value;
+  pocs = pocs.split('aka');
+  var poc=[];
+  for (i=0;i<pocs.length;i++){
+    var tmp = JSON.parse(pocs[i]);
+    poc.push(tmp);
+  }
+  
+  // console.log(typeof(poc));
+  // console.log(poc);
 
   //渲染POC列表
   transfer.render({
         elem: '#poc_scan'  //绑定元素
-        ,title: ['Web 应用 POC 列表（请单选）', '扫描队列（要测试的应用）']  //自定义标题
+        ,title: ['Web 应用 POC 列表（可多选）', '扫描队列（要测试的应用）']  //自定义标题
         ,showSearch: true//显示搜索框
-        ,data: [
-          //OA协同办公
-          //CMS
-          {"value": "Ruijie",  "title": "Ruijie"},
-          {"value": "Ecology-OA",  "title": "Ecology-OA"},
-          {"value": "Landray-OA",  "title": "Landray-OA"},
-          {"value": "Seeyon-OA",  "title": "Seeyon-OA"},
-          {"value": "TongDa-OA",  "title": "TongDa-OA"},
-          {"value": "YongYou",  "title": "YongYou"},
-          {"value": "ThinkPHP",  "title": "ThinkPHP"},
-          {"value": "Wordpress",  "title": "Wordpress"}
-        ],
+        ,data: poc,
         parseData: function(data){
           return {
             "value": data.value, //数据值
@@ -69,9 +69,12 @@ layui.use(['transfer','table'], function(){
   form.on('submit(scan)', function (data) {
     var getData = transfer.getData('start_scan'); //获取右侧数据
     app_name=getData[0]['title']
-    layer.alert('正在扫描 <font color="red">'+app_name+'</font> 相关漏洞<br/>请在服务端查看扫描进度......');
+    layer.alert('正在扫描 <font color="red">'+app_name+'</font> 等应用相关漏洞<br/>请在服务端查看扫描进度......');
     
-    data.field['app_name']=app_name;
+    for (i = 0; i < getData.length; i++) { 
+      data.field['app_name'] += getData[i]['value']+",";
+    }
+    //data.field['app_name']=app_name;
     //console.log(data.field);
     table.render({
       elem: '#vuln_results', height: 450,
