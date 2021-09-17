@@ -21,6 +21,4 @@ ENV LC_ALL=de_DE.utf-8
 ENV LANG=de_DE.utf-8
 EXPOSE 5000
 
-CMD ["mongod","-f", "/etc/mongodb.conf"]
-CMD ["redis-server"]
-CMD ./start.sh
+CMD ["/DBJ/start.sh"]
