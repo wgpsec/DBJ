@@ -41,7 +41,8 @@ icp_targets = []          # 所有公司名，用于ICP反查
 # HTTP请求-head头
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
-    'Content-Type': 'application/x-www-form-urlencoded'
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Cookie': 'BAIDUID=7932DC5339ABD6E84CB01EBD612A789S:FG=1;'
 }
 
 def clear_lists():
@@ -140,23 +141,36 @@ def get_whois(company_name):
 
 
 def parse_index(content):
-    tag_1 = 'window.pageData ='
-    tag_2 = 'window.isSpider = null;'
+    tag_1 = 'window.pageData = '
+    tag_2 = '/* eslint-enable */</script><script data-app'
 
     idx_1 = content.find(tag_1)
     idx_2 = content.find(tag_2)
 
-    mystr = content[idx_1 + len(tag_1): idx_2].strip()
-    len_str = len(mystr)
-    if mystr[len_str - 1] == ';':
-        mystr = mystr[0:len_str - 1]
-        json_data = json.loads(mystr)
-        if len(json_data["result"]) > 0:
-            item = json_data["result"]
+    # 判断关键词区间中的JSON数据来进行匹配
+    if idx_2 > idx_1:
+        # 关键词提取判断，去除多余字符
+        mystr = content[idx_1 + len(tag_1): idx_2].strip()
+        mystr = mystr.replace("\n", "")
+        mystr = mystr.replace("window.isSpider = null;", "")
+        mystr = mystr.replace("window.updateTime = null;", "")
+        mystr = mystr.replace(" ", "")
+        mystr = mystr.replace("if(window.pageData.result.isDidiwei){window.location.href=`/login?u=${encodeURIComponent(window.location.href)}`}", "")
+        mystr = mystr.replace(" ", "")
+        len_str = len(mystr)
+        if mystr[len_str - 1] == ';':
+            mystr = mystr[0:len_str - 1]
+        # 数据JSON转化
+        j = json.loads(mystr)
+
+        if len(j["result"]) > 0:
+            item = j["result"]
             return item
         else:
             return None
+
     else:
+        print("【关键词数据提取失败】")
         return None
 
 
@@ -167,6 +181,7 @@ def get_root_companyid(company_name):
         item = parse_index(resp.text)
         root_company_id = item["resultList"][0]['pid']
         resp.close()
+        print(root_company_id)
         return root_company_id
     except Exception as ex_com:
         print(str(ex_com) + '请设置Cookie并通过验证')
