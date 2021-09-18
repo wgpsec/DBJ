@@ -2,10 +2,6 @@
 
 ![](https://img.shields.io/badge/ReaTeam-%E6%AD%A6%E5%99%A8%E5%BA%93-red) ![](https://img.shields.io/badge/license-GPL--3.0-orange) ![](https://img.shields.io/badge/version-1.0.1-brightgreen) ![](https://img.shields.io/badge/author-wintrysec%20%E6%B8%A9%E9%85%92-blueviolet) ![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)
 
-![](https://gitee.com/wintrysec/images/raw/master/banner.jpg)
-
-## 概述
-
 ### 定位：边界资产梳理工具
 
 > 大宝剑的寓意：攻防利刃，简化繁琐操作解放双手，一键大保健~
@@ -36,8 +32,6 @@ bilibili视频地址（不方便拿实际目标演示，取消视频演示）
 
 #### 子域名资产梳理
 
-
-
 **任务格式**
 
 ```bash
@@ -48,8 +42,6 @@ baidu.com
 FOFA-API、https证书、DNS爆破等方式获取子域名资产，自动判断CDN。
 
 **边界IP&Web资产梳理**
-
-
 
 **任务格式**
 
@@ -111,27 +103,26 @@ Web指纹识别时并未发送恶意请求所以无需代理。
 
 ### Docker 安装模式
 
-##### 一、手动编译
+##### 一、自己构建镜像
 ```bash
-git clone https://github.com/wgpsec/DBJ.git # 速度太慢可用gitee
+git clone https://github.com/wgpsec/DBJ.git
 cd DBJ
-docker build -t dbj .							#构建镜像
-docker run -it -d --name dbj -p 5000:5000 dbj	#启动容器
+docker build -t dbj_img .							#构建镜像
+docker run -it -d --name dbj -p 5000:5000 dbj_img	#启动容器
 
 #如需重新安装，用以下命令删除容器
-docker stop dbj && docker rm `docker ps -aq --filter name=dbj`
+docker stop dbj
+docker rm `docker ps -a -q` && docker rmi -f dbj_img && docker network prune -f
 ```
 
 
-##### 二、推荐使用
+##### 二、直接一键启动
 
 ```bash
 docker run -it -d --name dbj -p 5000:5000 xrsec/dbj:latest
 ```
 
-访问 http://ip:65000 
-
-
+访问 http://ip:5000 
 
 ##### 三、查看输出信息
 
