@@ -132,18 +132,27 @@ docker logs dbj
 
 ### 手动安装（Centos）
 
+> 此模式适合开发调试
+
 ##### 一、基础环境安装
+
+将`DBJ`放置在系统根目录`\`
 
 ```bash
 mv /etc/yum.repos.d/CentOS-Linux-BaseOS.repo /etc/yum.repos.d/CentOS-Linux-BaseOS.repo.backup
 curl -o /etc/yum.repos.d/CentOS-Linux-BaseOS.repo https://mirrors.aliyun.com/repo/Centos-8.repo
 yum makecache
-yum -y install yum-utils zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel libffi-devel gcc make \
+
+yum -y install yum-utils zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel libffi-devel gcc make redis
+
 curl -O https://www.python.org/ftp/python/3.9.7/Python-3.9.7.tgz && tar xf Python-3.9.7.tgz;cd Python-3.9.7;./configure;make;make install
-echo "alias python='/usr/local/bin/python3.9'" > /etc/profile.d/python.sh && source /etc/profile.d/python.sh \
+
+echo "alias python='/usr/local/bin/python3.9'" > /etc/profile.d/python.sh && source /etc/profile.d/python.sh
+
 curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py -i https://pypi.tuna.tsinghua.edu.cn/simple/
+
 pip install Flask -i https://mirrors.aliyun.com/pypi/simple/
-yum -y install redis
+
 cat  > /etc/yum.repos.d/mongodb.repo << EOF
 [mngodb-org]
 name=MongoDB Repository
@@ -151,35 +160,35 @@ baseurl=http://mirrors.aliyun.com/mongodb/yum/redhat/7Server/mongodb-org/4.0/x86
 gpgcheck=0
 enabled=1
 EOF
+
 yum makecache;yum -y install mongodb-org
 pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 
+mkdir -p /root/.config
+cp -r /DBJ/data/.config/nuclei /root/.config/nuclei
+chmod +x /DBJ/data/nuclei
+ln -s /DBJ/data/nuclei /usr/bin/nuclei
+
 ```
 
+若mongoDB需要认证
 
+```bash
+pkill mongod	#关闭mongodb
+mongod -f /etc/mongod.conf	#重新启动mongo
+```
 
 ##### 二、创建数据库初始数据
 
 ```bash
-#配置MongoDB
-mongo
-use webapp
-db.createCollection("tasks")
-db.createCollection("webs")
-db.createCollection("subdomains")
-db.createCollection("vulns")
-db.createCollection("user")
-db.createCollection("http_hook")
-db.user.insert({uid:1,username:'admin',password:'admin'})
-db.http_hook.insert({'hook':'https://Your-WebHook'})
-exit
+mongo 127.0.0.1:27017/webapp data.js
 
 ```
 
 三、启动应用
 
 ```bash
-sh start.sh
+sh centos.sh
 ```
 
 然后打开浏览器访问 IP:5000 登录即可（默认账户密码admin/admin，进去自己改）
