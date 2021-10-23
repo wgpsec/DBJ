@@ -1,0 +1,17 @@
+name: DBJ Docker Update
+  
+on: push
+
+jobs:
+  Repository_Dispatch:
+    needs: DBJ_Docker_Build
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: XRSec/DBJ
+          event-type: DBJ_Update_Action
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
